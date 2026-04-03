@@ -20,7 +20,7 @@ OPENAI_API_KEY=sk-xxxxxxx
 
 ## Terminal 1 — TripleA Game (GUI)
 ```bash
-cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/triplea-game-bridge
+ cd /Reflexion-Wargame-Agent/triplea-game-bridge         
 ./gradlew :game-app:game-headed:run
 ```
 
