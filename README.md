@@ -23,6 +23,8 @@ OPENAI_API_KEY=sk-xxxxxxx
  cd /Reflexion-Wargame-Agent/triplea-game-bridge         
 ./gradlew :game-app:game-headed:run
 ```
+![demo](assets/step1.png)
+**
 
 Once the GUI opens, follow these steps:
 
@@ -42,6 +44,8 @@ Once the GUI opens, follow these steps:
 cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/triplea-game-bridge
 ./gradlew :game-app:game-bridge:run --args="--host 127.0.0.1 --port 3300 --name Bot_Yamamoto --take Japanese"
 ```
+![demo](assets/step2.png)
+**
 
 You should see:
 Bridge connected and took player: Japan
@@ -69,7 +73,8 @@ pip install -r requirements.txt
 cd /LangChain_RAG_WargameBot/RRagent/agent/src
 python main.py --milestone capture_india
 ```
-
+![demo](assets/ingame.png)
+**
 You should see the ASCII banner followed by:
 Waiting for Japanese turn...
 
