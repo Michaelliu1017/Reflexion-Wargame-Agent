@@ -23,7 +23,7 @@ OPENAI_API_KEY=sk-xxxxxxx
  cd /Reflexion-Wargame-Agent/triplea-game-bridge         
 ./gradlew :game-app:game-headed:run
 ```
-![demo](assets/step1.png)
+<img src="assets/step1.png" width="600" alt="demo">
 
 
 Once the GUI opens, follow these steps:
@@ -44,7 +44,7 @@ Once the GUI opens, follow these steps:
 cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/triplea-game-bridge
 ./gradlew :game-app:game-bridge:run --args="--host 127.0.0.1 --port 3300 --name Bot_Yamamoto --take Japanese"
 ```
-![demo](assets/step2.png)
+<img src="assets/step2.png" width="600" alt="demo">
 
 
 You should see:
