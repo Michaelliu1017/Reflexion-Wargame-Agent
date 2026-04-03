@@ -1,0 +1,275 @@
+AXIS & ALLIES PACIFIC 1940 — RULES REFERENCE FOR AI AGENT
+===========================================================
+This document is structured for semantic retrieval. Key decision-relevant rules are grouped by topic.
+
+
+=== VICTORY CONDITIONS ===
+
+Japanese wins by controlling 6 of the 8 victory cities AND holding Japan for one full round after reaching 6.
+The 8 victory cities are: Japan, Kiangsu, Phillipines, India, New South Whales, Hawaiian Islands, Western United States, and Kwangtung.
+Japan is mandatory — Japanese cannot win without it.
+
+Allied victory: Allies win by capturing Japan AND holding at least one Allied capital (India, New South Whales, Western United States) for one full round.
+
+
+=== TURN ORDER ===
+
+Each full game round follows this sequence:
+1. Japan
+2. United States
+3. China (limited faction)
+4. United Kingdom (Pacific)
+5. ANZAC (Australia-New Zealand)
+
+Japan always moves first. This gives Japan the initiative in the early game.
+
+
+=== JAPAN'S TURN PHASES (in order) ===
+
+Phase 1 — Politics (japanesePolitics):
+  - Japan may declare war on any neutral or non-enemy power.
+  - Declaring war on UK automatically triggers war with ANZAC.
+  - Declaring war on UK or ANZAC (unprovoked) triggers US entry conditions.
+  - Japan starts at war only with China.
+  - Japan may freely attack French Indochina without declaration.
+  - If Japan does nothing, click END_TURN to skip.
+
+Phase 2 — Purchase Units (japanesePurchase):
+  - Spend current IPCs on units from the purchase chart.
+  - Cannot exceed current IPC total.
+  - Units are placed on the board in Phase 6, not immediately.
+  - Choose units strategically based on the next few turns' needs.
+
+Phase 3 — Combat Move (japaneseCombatMove):
+  - Move units into enemy-controlled territories to attack.
+  - Aircraft must have a valid landing zone at end of combat.
+  - Submarines may move through sea zones with enemy surface ships (unless destroyer present).
+  - Transports must be escorted or unescorted through hostile sea zones carefully.
+
+Phase 4 — Conduct Combat (japaneseBattle):
+  - Battles resolve automatically with dice.
+  - Casualties are chosen by default (lowest-value units removed first).
+  - Submarines: roll 1 die per sub at attack value 2 as a surprise strike before regular combat if no enemy destroyer.
+  - AA guns fire first against attacking aircraft (hit on 1).
+  - Amphibious assaults: sea combat first, then shore bombardment, then land combat.
+
+Phase 5 — Non-Combat Move (japaneseNonCombatMove):
+  - Move friendly units within friendly-controlled territories.
+  - Aircraft must land on friendly territory or carrier.
+  - Transports may load and move land units.
+  - Cannot enter enemy territories.
+
+Phase 6 — Place Units (japanesePlace):
+  - Deploy purchased units at industrial complexes on Japanese-controlled territories.
+  - Units must be placed at a territory with an industrial complex (IC).
+  - Major IC: can place up to 10 units per turn.
+  - Minor IC: can place up to 3 units per turn.
+  - Japan starts with a Major IC on Japan and Minor ICs on various territories.
+
+Phase 7 — Collect Income (japaneseEndTurn):
+  - Count all controlled territories' IPC values.
+  - Add national objective bonuses (see below).
+  - This becomes Japan's IPC for next turn's purchases.
+
+
+=== UNIT STATS — LAND ===
+
+Infantry:
+  Cost: 3 IPC | Attack: 1 | Defense: 2 | Move: 1
+  Most cost-efficient defensive unit. Attack improves to 2 when paired with artillery.
+
+Artillery:
+  Cost: 4 IPC | Attack: 2 | Defense: 2 | Move: 1
+  Boosts one adjacent infantry's attack from 1 to 2 (1:1 ratio).
+
+Mechanized Infantry:
+  Cost: 4 IPC | Attack: 1 | Defense: 2 | Move: 2
+  Can blitz with tanks. Useful for rapid exploitation.
+
+Armor (Tank):
+  Cost: 6 IPC | Attack: 3 | Defense: 3 | Move: 2
+  Can blitz through uncontested enemy territory. High offensive value.
+
+Artillery (AA Gun):
+  Cost: 5 IPC | Attack: 0 | Defense: 0 | Move: 1 (non-combat only)
+  Fires at enemy aircraft entering territory, hits on 1. Limit 3 shots per territory per battle.
+
+
+=== UNIT STATS — AIR ===
+
+Fighter:
+  Cost: 10 IPC | Attack: 3 | Defense: 4 | Move: 4
+  Can land on aircraft carriers. Strong defender, versatile attacker.
+
+Tactical Bomber:
+  Cost: 11 IPC | Attack: 3 | Defense: 3 | Move: 4
+  Attack improves to 4 when paired with fighter or tank. Can land on carriers.
+
+Strategic Bomber:
+  Cost: 12 IPC | Attack: 4 | Defense: 1 | Move: 6
+  Can conduct strategic bombing raids against enemy industrial complexes.
+
+
+=== UNIT STATS — SEA ===
+
+Battleship:
+  Cost: 20 IPC | Attack: 4 | Defense: 4 | Move: 2 | 2 hits to sink
+  Can conduct shore bombardment during amphibious assaults (1 shot at attack value 4).
+
+Aircraft Carrier:
+  Cost: 16 IPC | Attack: 0 | Defense: 2 | Move: 2 | 2 hits to sink
+  Carries up to 2 aircraft. Damaged carrier cannot carry aircraft.
+
+Cruiser:
+  Cost: 12 IPC | Attack: 3 | Defense: 3 | Move: 2
+  Can conduct shore bombardment (attack value 3). Cost-effective capital ship.
+
+Destroyer:
+  Cost: 8 IPC | Attack: 2 | Defense: 2 | Move: 2
+  Negates submarine special abilities (surprise strike, submersion, immunity to air).
+  Essential for anti-submarine warfare.
+
+Submarine:
+  Cost: 6 IPC | Attack: 2 | Defense: 1 | Move: 2
+  Surprise strike: attacks before regular combat at value 2 (if no enemy destroyer present).
+  Can submerge instead of fighting. Immune to air attacks unless enemy destroyer present.
+  Can move through hostile sea zones unless enemy destroyer is present.
+
+Transport:
+  Cost: 7 IPC | Attack: 0 | Defense: 0 | Move: 2
+  Carries up to 2 land units (max 1 heavy unit like armor).
+  Defenseless — must be escorted by combat ships.
+  Critical for amphibious operations.
+
+
+=== AMPHIBIOUS ASSAULT RULES ===
+
+Step 1 — Sea Combat: Clear enemy warships from the target sea zone.
+Step 2 — Shore Bombardment: Battleships and cruisers may fire once at defending land units (if no sea combat occurred).
+Step 3 — Land Combat: Attacking land units fight defenders normally.
+
+Notes:
+  - Transports cannot be used if the sea zone is contested (enemy ships present) unless they win sea combat first.
+  - Attacking units that came from transports cannot retreat.
+  - Aircraft supporting amphibious assaults must have a landing zone at end of combat.
+
+
+=== SUBMARINE RULES ===
+
+Surprise Strike (attacking): Roll before regular combat at attack value 2. No enemy destroyer = hits are removed before defenders fire back.
+Surprise Strike (defending): Roll at defense value 1 before attackers fire.
+Submersion: Submarines may choose to submerge instead of fighting (retreat to safety).
+Movement: Submarines ignore enemy surface ships when moving, UNLESS an enemy destroyer is in the sea zone.
+Air immunity: Aircraft cannot attack submarines unless an enemy destroyer is also present in the same sea zone.
+
+
+=== KAMIKAZE RULES (JAPAN ONLY) ===
+
+Japan has 6 kamikaze tokens total for the entire game.
+Can only be used in: Sea Zones adjacent to Japan, Okinawa, Iwo Jima, Formosa, Mariana Islands, and Philippines.
+Kamikaze hits on a roll of 1 or 2.
+A successful kamikaze hit prevents shore bombardment that round.
+Tokens are one-use only.
+
+
+=== POLITICAL SITUATION — USA ===
+
+USA starts the game neutral (cannot attack or be attacked by Japan initially).
+USA enters the war if:
+  - Japan attacks USA directly, OR
+  - Japan declares war on UK or ANZAC unprovoked, OR
+  - By Round 3 income phase, USA may voluntarily enter the war.
+Once at war, USA mobilizes rapidly: US income grows significantly each round.
+USA is the most powerful Allied nation by mid-game.
+
+Strategic implication: Delaying US entry is Japan's top priority in early game.
+
+
+=== POLITICAL SITUATION — CHINA ===
+
+China is an Allied faction but operates independently (cannot share resources with other Allies).
+China can only purchase infantry (and artillery if Burma Road is open).
+Chinese units can only operate in territories marked with the Republic of China symbol, plus Yunnan and Burma.
+Burma Road bonus: If Allies control India, Burma, Yunnan, and Szechwan — China receives +6 IPC per turn.
+Cutting the Burma Road is a key Japanese strategic objective.
+
+
+=== NATIONAL OBJECTIVES — JAPAN ===
+
+While not at war with USA (all three must be true):
+  +10 IPC: Japan has not attacked USA, has not entered French Indochina unprovoked,
+           and has not made an unprovoked declaration against UK/ANZAC.
+
+After declaring war on Western Allies:
+  +5 IPC: Japan controls Guam, Midway, Wake Island, Gilbert Islands, Solomon Islands.
+  +5 IPC: Japan controls Sumatra, Java, Borneo, and Celebes (strategic resource zone).
+  +5 IPC per objective capital: Calcutta (India), Sydney (Australia), Honolulu (Hawaii), San Francisco.
+
+
+=== KEY STRATEGIC TERRITORIES ===
+
+Japan (Tokyo):
+  Major Industrial Complex. Home territory. Must never be lost.
+  Starting income: 8 IPC.
+
+Manchuria:
+  Large land force staging area. Border with China.
+
+Korea:
+  Bridge between Japan mainland and continent. Important for land supply lines.
+
+Formosa (Taiwan):
+  Naval staging point. Adjacent to Philippines and Southeast Asia.
+
+French Indochina / Thailand:
+  Gateway to Southeast Asia. High income territory. Capture early for resource access.
+
+Philippines (Manila):
+  Victory city. US territory. Capturing it severs US Pacific supply lines.
+
+Dutch East Indies (Sumatra, Java, Borneo, Celebes):
+  +5 IPC national objective if all four are controlled.
+  Critical oil resources. Priority target in early war.
+
+Calcutta (India):
+  Victory city. UK territory. Capturing it cripples British Pacific operations.
+  Access requires pushing through Burma and/or amphibious landing.
+
+Hawaiian Islands (Honolulu):
+  Victory city. US territory. US Pacific Fleet home base.
+  Extremely difficult to hold long-term due to US production.
+
+Australia (Sydney):
+  Victory city. ANZAC capital. Remote but valuable for national objectives.
+
+Solomon Islands:
+  Island chain. Part of national objective island group (+5 IPC).
+
+
+=== EARLY GAME STRATEGY GUIDE ===
+
+Round 1 Priorities (before US enters war):
+  1. Purchase transports and infantry for amphibious operations.
+  2. Declare war on UK to open Southeast Asia campaign (accept that US entry accelerates).
+     OR stay neutral to collect +10 IPC bonus for 1-2 more rounds.
+  3. Attack Philippines, Dutch East Indies, and push into Burma.
+
+Economic targets:
+  - Secure Dutch East Indies (+5 IPC national objective) within first 3 rounds.
+  - Cut Burma Road to starve China.
+  - Do NOT overextend into Australia — it is too far and US pressure will mount.
+
+Navy considerations:
+  - Maintain naval superiority in the South Pacific sea lanes.
+  - Keep at least 1 destroyer per fleet to protect against enemy submarines.
+  - Carriers + fighters provide air cover for amphibious operations.
+
+Calcutta (India) approach:
+  - Advance through Burma (French Indochina → Burma → India).
+  - Requires 2-3 rounds of land advance with infantry + artillery.
+  - Shore bombardment + amphibious assault from Bay of Bengal is an alternative.
+  - Capturing Calcutta eliminates UK Pacific operations and grants +5 IPC national objective.
+
+Defending Japan:
+  - Always keep fighters and at least 2 infantry on Japan itself.
+  - Monitor US fleet buildup — do not let US carriers approach Japan unopposed.

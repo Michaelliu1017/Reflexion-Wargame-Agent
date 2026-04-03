@@ -1,0 +1,10 @@
+langchain==0.3.25
+langchain-openai==0.2.14
+langchain-community==0.3.24
+faiss-cpu
+python-dotenv
+requests
+torch
+numpy
+torch
+numpy
