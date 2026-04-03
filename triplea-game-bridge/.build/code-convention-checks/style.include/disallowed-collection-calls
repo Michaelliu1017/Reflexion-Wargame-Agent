@@ -1,0 +1,9 @@
+Collections.emptyList
+Collections.emptyMap
+Collections.emptySet
+Collections.singleton
+Collections.singletonList
+Collections.singletonMap
+Collections.unmodifiableList
+Collections.unmodifiableMap
+Collections.unmodifiableSet

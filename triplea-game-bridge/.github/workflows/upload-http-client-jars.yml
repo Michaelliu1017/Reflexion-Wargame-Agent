@@ -1,0 +1,38 @@
+# Jar files uploaded are used as a maven dependency by server (eg: lobby)
+name: Create Http JAR files and upload to github packages
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/upload-http-client-jars.yml'
+      - 'game-app/domain-data/**'
+      - 'http-clients/**'
+      - 'lib/java-extras/**'
+      - 'lib/websocket-client/**'
+      - 'lib/feign-common/**'
+env:
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+jobs:
+  build:
+    runs-on: Ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v6
+        with:
+          # Fetch depth of 0 is needed so we checkout the full revision history
+          # The current revision count will be used as our build-number
+          fetch-depth: '0'
+      - name: Set up JDK 21
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 21
+      - name: set build version variables
+        run: |
+          BUILD_VERSION=$(game-app/run/.build/get-build-version)
+          echo "JAR_VERSION=$BUILD_VERSION" | tee -a $GITHUB_ENV
+      - name: Publish lobby client JAR
+        run: ./gradlew :http-clients:lobby-client:publish :game-app:domain-data:publish :lib:java-extras:publish :lib:websocket-client:publish :lib:feign-common:publish
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

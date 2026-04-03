@@ -1,0 +1,11 @@
+#!/bin/bash
+
+# Overwrites the game-headed 'product.properties' file to have an updated build version
+
+scriptDir=$(dirname "$0")
+buildVersion=$("$scriptDir"/get-build-version)
+productPropertiesFile=$(find "$scriptDir/../../" -path "*src/main/resources/META-INF/*" -name "product.properties" -type f)
+
+set -x
+
+echo "version = $buildVersion" > "$productPropertiesFile"

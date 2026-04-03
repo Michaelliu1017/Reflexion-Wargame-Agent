@@ -1,0 +1,19 @@
+plugins {
+    id("triplea-java-library")
+    id "application"
+}
+
+application {
+    mainClass = "org.triplea.bridge.BridgeMain"
+}
+
+dependencies {
+    implementation project(":lib:java-extras")
+    implementation project(":game-app:game-core")
+    implementation libs.javalin
+    implementation libs.gson
+}
+
+run {
+    systemProperty "triplea.headless", "true"
+}

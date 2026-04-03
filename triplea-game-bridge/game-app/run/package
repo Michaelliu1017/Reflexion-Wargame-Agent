@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# Builds TripleA game-installers
+# The goal of this script is to build all of the installers and place
+# the installer executables into a build folder. From there, any files
+# located in that folder will be uploaded to github releases.
+
+## install install4j
+scriptDir=$(dirname "$0")
+
+if [ -z "$INSTALL4J_LICENSE_KEY" ]; then
+  echo "Environment variable 'INSTALL4J_LICENSE_KEY' must be set"
+  exit 1
+fi
+
+set -ex
+
+function main() {
+  build_installers
+  collect_artifacts
+}
+
+## Runs gradle command that creates the installer executables, uses intall4j
+function build_installers() {
+  ## Set the build number in 'product.properties' before we build the game-headed release
+  $scriptDir/.build/set-game-headed-build-number
+  JAVA_OPTS=-Xmx4G ./gradlew \
+      --no-daemon \
+      --parallel \
+      -Pinstall4jHomeDir="$INSTALL4J_HOME" \
+      release
+}
+
+## Gathers built artifacts from all sub-projects to a single top-level to
+## include with the release
+function collect_artifacts() {
+  readonly ARTIFACTS_DIR=./build/artifacts
+  mkdir -p $ARTIFACTS_DIR
+  cp ./*/*/build/artifacts/* ${ARTIFACTS_DIR}
+  find $ARTIFACTS_DIR
+}
+
+main
+

@@ -1,0 +1,426 @@
+【TripleA 日本方规则摘要】
+
+0. 【必读】END_TURN 只结束「当前阶段」，不会结束整个日本回合。日本一回合有多阶段：购买→战斗移动→战斗→非战斗移动→部署→收税等。你必须：在购买阶段做完 BUY_UNITS 后调用 END_TURN 进入下一阶段；在部署阶段做完 PLACE_UNITS 后调用 END_TURN；其他阶段若 legal_actions 里有 END_TURN 就调用 END_TURN 进入下一阶段。每次调用后再次 get_game_state，若 currentPlayerName 仍为 "Japanese" 说明仍是日本回合，继续根据 stepName 和 legal_actions 执行下一阶段，直到 currentPlayerName 变为其他玩家才停止。不要在做完一次购买或一次 END_TURN 后就认为整回合结束。
+
+1. 回合阶段顺序（按 stepName/phaseName 判断）：
+   政治(japanesePolitics) → 购买(japanesePurchase) → 战斗移动 → 战斗 → 非战斗移动 → 部署(japanesePlace) → 收税等 → 下一玩家。
+   只有购买阶段能 BUY_UNITS，只有部署阶段能 PLACE_UNITS；其他阶段若 legal_actions 里有 END_TURN 就只发 END_TURN。
+
+2. 购买阶段：
+   - 用 get_game_state 看 japan.pus 和 purchaseOptions（每项有 unitType、cost、maxAffordable）。
+   - do_action(BUY_UNITS, units={"infantry": 3}) 表示买 3 个步兵；单位类型必须与 purchaseOptions 里一致，总花费不能超过 pus。
+
+3. 部署阶段：
+   - 用 placeOptions 看哪些领土可放、容量等；placements 里的 territory 必须与 state 里地名完全一致（如 "Japan"、"6 Sea Zone"）。
+   - 只能部署本回合购买或尚未放置的单位，数量不能超过持有数。
+
+4. 日本策略建议：
+   - 优先保证本土和关键产 PU 省份；航母与战斗机配合控制海域；中国战场按 PU 和战线权衡推进
+
+Axis & Allies Pacific 1940 Second Edition
+Japan Strategic AI Knowledge Base
+Version 1.0
+
+This document summarizes the rules and high-level strategy required for an AI to competently play Japan in Axis & Allies Pacific 1940 Second Edition.
+
+--------------------------------------------------
+SECTION 1 — GAME OBJECTIVE
+--------------------------------------------------
+
+Victory Condition:
+
+Japan wins if it controls 6 Victory Cities at the end of a complete round while still controlling Tokyo.
+
+Victory Cities:
+Tokyo
+Shanghai
+Hong Kong
+Manila
+Calcutta
+Sydney
+Honolulu
+San Francisco
+
+Japan starts with:
+Tokyo
+Shanghai
+
+Strategic objective:
+capture 4 additional victory cities.
+
+--------------------------------------------------
+SECTION 2 — TURN ORDER
+--------------------------------------------------
+
+Each round consists of the following powers:
+
+1 Japan
+2 United States
+3 China
+4 United Kingdom
+5 ANZAC
+
+Japan always moves first.
+
+--------------------------------------------------
+SECTION 3 — TURN STRUCTURE
+--------------------------------------------------
+
+Each power performs six phases:
+
+1 Purchase and Repair Units
+2 Combat Move
+3 Conduct Combat
+4 Noncombat Move
+5 Mobilize New Units
+6 Collect Income
+
+--------------------------------------------------
+SECTION 4 — POLITICAL SITUATION
+--------------------------------------------------
+
+Initial war status:
+
+Japan is at war with China only.
+
+Japan is NOT initially at war with:
+USA
+United Kingdom
+ANZAC
+
+Japan may declare war at the start of its Combat Move phase.
+
+If Japan attacks any Allied territory, full war begins.
+
+If Japan does NOT declare war:
+USA automatically enters the war on turn 3.
+
+Strategic implication:
+Japan must decide between:
+
+Early War Strategy
+or
+Preparation Strategy
+
+--------------------------------------------------
+SECTION 5 — ECONOMY
+--------------------------------------------------
+
+Income is determined by IPC values of territories.
+
+Japan starting income:
+26 IPC
+
+Economic strategy is critical.
+
+Major income sources:
+
+Dutch East Indies
+Philippines
+Malaya
+China territories
+
+Economic expansion is the primary objective in early game.
+
+--------------------------------------------------
+SECTION 6 — UNIT TYPES
+--------------------------------------------------
+
+Land Units:
+
+Infantry
+Cheap defensive unit
+
+Artillery
+Supports infantry attack
+
+Tank
+Fast offensive unit
+Can blitz through empty hostile territory
+
+Mechanized Infantry
+Moves with tanks
+
+AAA
+Anti-air defense
+
+--------------------------------------------------
+
+Air Units:
+
+Fighter
+Flexible air superiority
+
+Tactical Bomber
+Synergizes with tanks and carriers
+
+Strategic Bomber
+Long range bombing
+
+--------------------------------------------------
+
+Naval Units:
+
+Aircraft Carrier
+Projects air power
+
+Battleship
+Heavy naval combat
+Takes two hits
+
+Cruiser
+Supports amphibious assaults
+
+Destroyer
+Counters submarines
+
+Submarine
+Stealth attacks
+Can submerge
+
+Transport
+Moves land units across sea
+
+--------------------------------------------------
+SECTION 7 — COMBAT SYSTEM
+--------------------------------------------------
+
+Combat is resolved using dice.
+
+Each unit rolls one die.
+
+A hit occurs if:
+
+die result <= attack value (attacker)
+die result <= defense value (defender)
+
+Casualties are removed after each round.
+
+Combat continues until:
+
+one side retreats
+or
+one side is eliminated
+
+--------------------------------------------------
+SECTION 8 — AMPHIBIOUS ASSAULT
+--------------------------------------------------
+
+Transports unload land units into coastal territories.
+
+Sequence:
+
+1 Sea battle
+2 Naval bombardment
+3 Land battle
+
+Important rule:
+
+Land units coming from transports cannot retreat.
+
+--------------------------------------------------
+SECTION 9 — AIR OPERATIONS
+--------------------------------------------------
+
+Aircraft must land in safe territory or on carrier.
+
+Fighters and tactical bombers can land on carriers.
+
+Bombers cannot.
+
+Airbases increase aircraft movement by +1.
+
+--------------------------------------------------
+SECTION 10 — JAPANESE SPECIAL RULE
+--------------------------------------------------
+
+Kamikaze strikes.
+
+Japan has 6 Kamikaze tokens.
+
+Conditions:
+
+Only in designated sea zones near Japan.
+
+Hit on roll <= 2.
+
+Targets:
+
+Enemy surface warships.
+
+Strategic use:
+
+Defend home waters
+Stop amphibious invasions.
+
+--------------------------------------------------
+SECTION 11 — CORE JAPANESE STRATEGY
+--------------------------------------------------
+
+Japan must achieve rapid expansion before USA industrial power dominates.
+
+Three strategic priorities:
+
+1 Economic expansion
+2 Naval superiority
+3 Defensive perimeter
+
+--------------------------------------------------
+SECTION 12 — OPENING STRATEGY
+--------------------------------------------------
+
+Turn 1 objective:
+
+Secure China and prepare expansion south.
+
+Recommended purchases:
+
+Aircraft Carrier
+Destroyers
+Transports
+Infantry
+
+Key targets:
+
+Chinese territories
+Philippines
+Malaya
+Dutch East Indies
+
+--------------------------------------------------
+SECTION 13 — EXPANSION STRATEGY
+--------------------------------------------------
+
+Primary economic targets:
+
+Dutch East Indies islands
+
+Java
+Sumatra
+Borneo
+Celebes
+
+These dramatically increase Japanese income.
+
+--------------------------------------------------
+SECTION 14 — DEFENSIVE PERIMETER
+--------------------------------------------------
+
+Japan should establish a defensive perimeter including:
+
+Japan
+Okinawa
+Formosa
+Philippines
+Caroline Islands
+Marianas
+Iwo Jima
+
+These create layered defense against US navy.
+
+--------------------------------------------------
+SECTION 15 — NAVAL DOCTRINE
+--------------------------------------------------
+
+Japan navy should be carrier centered.
+
+Carrier Task Force structure:
+
+2 carriers
+4 fighters
+2 tactical bombers
+1 battleship
+1 cruiser
+2 destroyers
+1 submarine
+
+Avoid splitting fleets unnecessarily.
+
+Concentrated naval power is essential.
+
+--------------------------------------------------
+SECTION 16 — WAR WITH UNITED STATES
+--------------------------------------------------
+
+USA becomes strongest power in late game.
+
+Japan must:
+
+expand early
+damage US navy
+delay US production advantage
+
+Goal:
+
+force USA into long-distance operations.
+
+--------------------------------------------------
+SECTION 17 — CHINA STRATEGY
+--------------------------------------------------
+
+China cannot build advanced units.
+
+Japan should:
+
+destroy Chinese armies early
+capture Chinese production areas
+block Burma Road if possible.
+
+--------------------------------------------------
+SECTION 18 — ECONOMIC WARFARE
+--------------------------------------------------
+
+Convoy disruptions can reduce enemy income.
+
+Submarines should target:
+
+UK convoy routes
+ANZAC trade routes
+
+--------------------------------------------------
+SECTION 19 — AI DECISION ALGORITHM
+--------------------------------------------------
+
+Priority evaluation:
+
+1 Protect Tokyo
+2 Maintain naval superiority
+3 Expand economy
+4 Capture victory cities
+5 Delay USA advance
+
+Decision scoring system:
+
+territory_value
+enemy_strength
+distance_from_base
+economic_gain
+
+AI should maximize:
+
+economic growth
+strategic positioning
+
+--------------------------------------------------
+SECTION 20 — HIGH LEVEL PLAYSTYLE
+--------------------------------------------------
+
+Early Game:
+
+Expand rapidly
+Capture economic territories
+
+Mid Game:
+
+Build carrier fleets
+Establish defensive perimeter
+
+Late Game:
+
+Hold victory cities
+Delay US advance
+
+--------------------------------------------------
+END OF DOCUMENT
+--------------------------------------------------
+

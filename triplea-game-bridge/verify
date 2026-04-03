@@ -1,0 +1,9 @@
+#!/bin/bash
+
+# This script runs all checks across the entire project.
+scriptDir="$(dirname "$0")"
+set -o pipefail
+set -eu
+
+"$scriptDir/gradlew" spotlessApply check $@
+"$scriptDir/.build/code-convention-checks/check-custom-style"
