@@ -55,13 +55,18 @@ The Japan seat in TripleA will be claimed and the game will start automatically.
 
 ## Terminal 3 — Python AI Agent
 ```bash
-cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/RRagent/agent/src
+cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/RRagent
 
 # Activate virtual environment
 python3.11 -m venv .venv
 source .venv/bin/activate
 
+# Install requirements
+cd /LangChain_RAG_WargameBot/RRagent/agent
+pip install -r requirements.txt
+
 # Start agent
+cd /LangChain_RAG_WargameBot/RRagent/agent/src
 python main.py --milestone capture_india
 ```
 
