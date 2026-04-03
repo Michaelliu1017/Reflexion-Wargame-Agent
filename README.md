@@ -73,7 +73,7 @@ pip install -r requirements.txt
 cd /LangChain_RAG_WargameBot/RRagent/agent/src
 python main.py --milestone capture_india
 ```
-<img src="assets/ingame.png" width="800" alt="demo">
+<img src="assets/ingame.png" width="500" alt="demo">
 
 You should see the ASCII banner followed by:
 Waiting for Japanese turn...
