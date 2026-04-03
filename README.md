@@ -1,6 +1,6 @@
 
 <p align="center">
-  <img src="assets/gitowl.png" width="50">
+  <img src="assets/gitowl.png" width="100">
 </p>
 
 # Reflexion-Wargame-Agent
