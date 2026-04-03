@@ -40,7 +40,7 @@ Once the GUI opens, follow these steps:
 ## Terminal 2 — Java Bridge
 ```bash
 cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/triplea-game-bridge
-./gradlew :game-app:game-bridge:run --args="--host 127.0.0.1 --port 3300 --name Bot_Yamamoto --take Japan"
+./gradlew :game-app:game-bridge:run --args="--host 127.0.0.1 --port 3300 --name Bot_Yamamoto --take Japanese"
 ```
 
 You should see:
