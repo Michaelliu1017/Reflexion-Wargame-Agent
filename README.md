@@ -58,7 +58,8 @@ The Japan seat in TripleA will be claimed and the game will start automatically.
 cd /Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot/RRagent/agent/src
 
 # Activate virtual environment
-source ../.venv/bin/activate
+python3.11 -m venv .venv
+source .venv/bin/activate
 
 # Start agent
 python main.py --milestone capture_india
