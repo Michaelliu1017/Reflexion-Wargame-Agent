@@ -3,8 +3,10 @@
 
 # ── macOS 拉的屎 ────────────────────────────
 .DS_Store
+
 # ── Pycharm 拉的屎 ────────────────────────────
 .idea/
+
 # ── Python 编译缓存 ───────────────────────────
 __pycache__/
 *.pyc
@@ -13,6 +15,3 @@ __pycache__/
 venv/
 .venv/
 
-# ── 自动生成的运行时数据 ──────────────────────
-knowledge/faiss_index/
-memory/experiences.json
