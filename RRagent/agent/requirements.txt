@@ -1,6 +1,7 @@
 langchain==0.3.25
 langchain-openai==0.2.14
 langchain-community==0.3.24
+git+https://github.com/Michaelliu1017/PyBanner.git
 faiss-cpu
 python-dotenv
 requests

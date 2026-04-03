@@ -9,12 +9,14 @@ Main game loop.
 import os
 import time
 import uuid
+from pyBanner import banner, info, other
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
 from agent import run_full_turn, LLM_MODEL
 from bridge_client import TripleABridgeClient
 from memory import GameMemory, ReflexionEngine
+
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
@@ -252,86 +254,15 @@ if __name__ == "__main__":
     import argparse
 
     # ── Startup banner  ─────────────────────────────
-    seed = "00080909000409490251409504612094067110920007719200086183000950930009923300095273000940940008454500080909"
-    ORANGE, RESET = "\033[38;5;202m", "\033[0m"
-
-    for i in range(13):
-        s = int(seed[-8 * (i + 1):-8 * i or None])
-        line = "".join(
-            " " * (s // 10 ** j % 10) + f"{ORANGE}◆{RESET}" * (s // 10 ** (j + 1) % 10) for j in range(0, 8, 2))
-        print(line)
-        time.sleep(0.05)
-    #*********风格4 — 竖条从中间展开
-    import time
-
-    width = 36
-    for i in range(width // 2):
-        left = width // 2 - i
-        right = width // 2 + i
-        line = " " * left + "\033[38;5;214m" + "█" * (right - left) + "\033[0m"
-        print(f"\r{line}", end="", flush=True)
-        time.sleep(0.03)
-    print()
-    #*************风格3 — 文字从噪点中浮现
-    import time, random
-
-    title = "  RRAgent  "
-    chars = "**********"
-    for step in range(15):
-        line = ""
-        for c in title.center(30):
-            if random.random() < step / 14:
-                line += f"\033[38;5;208m{c}\033[0m"
-            else:
-                line += f"\033[38;5;238m{random.choice(chars)}\033[0m"
-        print("\r" + line, end="", flush=True)
-        time.sleep(0.08)
-    print()
-    #*********************************8
-    import random, time
-
-    seed = "00080909000409490251409504612094067110920007719200086183000950930009923300095273000940940008454500080909"
-    ORANGE, DIM, RESET = "\033[38;5;208m", "\033[38;5;202m", "\033[0m"
-    noise = ["░", "▒", "▓", "·", ":", " "]
-
-    # 先生成所有行的最终图案
-    lines = []
-    for i in range(13):
-        s = int(seed[-8 * (i + 1):-8 * i or None])
-        lines.append("".join(" " * (s // 10 ** j % 10) + "█" * (s // 10 ** (j + 1) % 10) for j in range(0, 8, 2)))
-
-    width = max(len(l) for l in lines)
-
-    # 噪点浮现：从全噪点逐渐收敛到真实图案
-    for frame in range(20):
-        output = []
-        for line in lines:
-            row = ""
-            for ch in line.ljust(width):
-                if ch == "█":
-                    # 真实像素：随帧数增加，越来越稳定
-                    if random.random() < frame / 19:
-                        row += f"{ORANGE}█{RESET}"
-                    else:
-                        row += f"{DIM}{random.choice(noise)}{RESET}"
-                else:
-                    # 空白区域：随帧数增加，噪点越来越少
-                    if random.random() < (1 - frame / 19) * 0.4:
-                        row += f"{DIM}{random.choice(noise)}{RESET}"
-                    else:
-                        row += " "
-            output.append(row)
-
-        print("\n".join(output))
-        time.sleep(0.06)
-        print(f"\033[{len(lines)}A", end="")  # 光标回到顶部覆盖
-
-    # 最终定格，干净输出
-    for line in lines:
-        s_clean = "".join(f"{ORANGE}█{RESET}" if c == "█" else " " for c in line.ljust(width))
-        print(s_clean)
-
-
+    banner(4)
+    other(0)
+    info(0,
+         project="Reflexion Based Self-Learning Agent",
+         version="1.0",
+         environment="Development",
+         description="",
+         status="Initializing... "
+         )
 
     # ── Argument parsing ───────────────────────────────────────
     parser = argparse.ArgumentParser(description="TripleA LLM Agent")
