@@ -4,9 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="0829ee9f-3f16-44d1-9c75-137d0a36cdac" name="Changes" comment="">
-      <change beforePath="$PROJECT_DIR$/RRagent/agent/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/RRagent/agent/.gitignore" afterDir="false" />
-    </list>
+    <list default="true" id="0829ee9f-3f16-44d1-9c75-137d0a36cdac" name="Changes" comment="" />
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -53,7 +51,7 @@
       <option name="presentableId" value="Default" />
       <updated>1775231811593</updated>
       <workItem from="1775231812744" duration="6870000" />
-      <workItem from="1775247851642" duration="952000" />
+      <workItem from="1775247851642" duration="1676000" />
     </task>
     <servers />
   </component>
