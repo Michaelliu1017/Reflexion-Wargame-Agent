@@ -5,10 +5,7 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="0829ee9f-3f16-44d1-9c75-137d0a36cdac" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/LICENSE.txt" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RRagent/agent/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/RRagent/agent/.gitignore" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/RRagent/agent/src/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/RRagent/agent/src/main.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.gitignore" beforeDir="false" afterPath="$PROJECT_DIR$/.gitignore" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
@@ -29,7 +26,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "RunOnceActivity.ShowReadmeOnStart": "true",
-    "git-widget-placeholder": "Rebasing main",
+    "git-widget-placeholder": "main",
     "last_opened_file_path": "/Users/michaelliu/Documents/swe/LangChain_RAG_WargameBot",
     "node.js.detected.package.eslint": "true",
     "node.js.detected.package.tslint": "true",
@@ -57,7 +54,7 @@
       <updated>1775231811593</updated>
       <workItem from="1775231812744" duration="6870000" />
       <workItem from="1775247851642" duration="5291000" />
-      <workItem from="1775509088319" duration="45000" />
+      <workItem from="1775509088319" duration="274000" />
     </task>
     <servers />
   </component>
