@@ -9,7 +9,7 @@ Main game loop.
 import os
 import time
 import uuid
-from pyBanner import banner, info, other
+from pyBanner import banner, info, effect
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
@@ -255,7 +255,7 @@ if __name__ == "__main__":
 
     # ── Startup banner  ─────────────────────────────
     banner(4)
-    other(0)
+    effect(0)
     info(0,
          project="Reflexion Based Self-Learning Agent",
          version="1.0",
