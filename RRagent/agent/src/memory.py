@@ -30,6 +30,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_openai import ChatOpenAI, OpenAIEmbeddings
 from pydantic import BaseModel, Field
+from rank_bm25 import BM25Okapi
 
 load_dotenv()
 
@@ -199,7 +200,10 @@ class GameMemory:
             self.rules_store.save_local(rules_index_path)
             print(f"[Memory] Rules vector store saved: {rules_index_path}")
 
-        # ── Experience vector store ──
+        # ── Experience vector store + BM25 index ──
+        self._bm25_corpus: list[str] = []
+        self._bm25_index: BM25Okapi | None = None
+
         if os.path.exists(exp_index_path):
             print(f"[Memory] Loading experience vector store: {exp_index_path}")
             self.exp_store = FAISS.load_local(
@@ -207,16 +211,46 @@ class GameMemory:
                 self.embeddings,
                 allow_dangerous_deserialization=True,
             )
+            self._rebuild_bm25_from_faiss()
         else:
             self.exp_store = None
-            # Try to seed from experiences.json if it exists
             if experiences_json_path and os.path.exists(experiences_json_path):
                 self._seed_from_json(experiences_json_path)
             else:
                 print(f"[Memory] No experience vector store (will create on first Reflexion)")
 
+    # ── BM25 helpers ──
+
+    @staticmethod
+    def _tokenize(text: str) -> list[str]:
+        """Lowercase split + keep bracket tags like [Round 3] as single tokens."""
+        tags = re.findall(r'\[[^\]]+\]', text)
+        plain = re.sub(r'\[[^\]]+\]', '', text).lower().split()
+        return [t.lower() for t in tags] + plain
+
+    def _rebuild_bm25_from_faiss(self) -> None:
+        """Rebuild BM25 index from all documents currently in the FAISS exp_store."""
+        if self.exp_store is None:
+            return
+        all_docs = list(self.exp_store.docstore._dict.values())
+        self._bm25_corpus = [doc.page_content for doc in all_docs]
+        if self._bm25_corpus:
+            tokenized = [self._tokenize(t) for t in self._bm25_corpus]
+            self._bm25_index = BM25Okapi(tokenized)
+            print(f"[Memory] BM25 index built: {len(self._bm25_corpus)} documents")
+        else:
+            self._bm25_index = None
+
+    def _add_to_bm25(self, text: str) -> None:
+        """Incrementally add a single document to the BM25 corpus and rebuild."""
+        self._bm25_corpus.append(text)
+        tokenized = [self._tokenize(t) for t in self._bm25_corpus]
+        self._bm25_index = BM25Okapi(tokenized)
+
+    # ── Seed from JSON ──
+
     def _seed_from_json(self, json_path: str) -> None:
-        """One-time import: load all in_rag lessons from experiences.json into exp_store."""
+        """One-time import: load all in_rag lessons from experiences.json into exp_store + BM25."""
         try:
             with open(json_path, "r", encoding="utf-8") as f:
                 data = json.loads(f.read().strip() or "[]")
@@ -248,6 +282,7 @@ class GameMemory:
             self.exp_store = FAISS.from_documents(docs, self.embeddings)
             self.exp_store.save_local(self.exp_index_path)
             print(f"[Memory] Experience vector store created and saved: {self.exp_index_path}")
+            self._rebuild_bm25_from_faiss()
         else:
             print(f"[Memory] No in_rag lessons found in {json_path}")
 
@@ -263,49 +298,92 @@ class GameMemory:
         print(f"[Memory] Rules text split into {len(chunks)} chunks, vectorizing...")
         return FAISS.from_documents(chunks, self.embeddings)
 
-    # 2) retrieve memory
+    # 2) retrieve memory（version 2） — Hybrid (BM25 + FAISS + RRF)
     def retrieve(self, query: str, k: int = 3) -> str:
         """
-        Search both stores separately, then combine results.
-        Experience results come first, then are rules. (version 2)
+        Hybrid retrieval (version 3):
+          1. BM25 keyword search on exp_store  → top-k candidates
+          2. FAISS semantic search on exp_store → top-k candidates
+          3. Reciprocal Rank Fusion (RRF) merges both lists
+          4. Rules store searched separately (semantic only, always appended)
         """
-        results=[]
-        try:
-            if self.exp_store is not None:
-                exp_doc = self.exp_store.similarity_search(query, k=k)
-                results.extend(exp_doc)
+        exp_results: list[str] = []
 
+        try:
+            # ── Experience: Hybrid BM25 + FAISS ──
+            if self.exp_store is not None:
+                faiss_texts = self._faiss_exp_search(query, k=k)
+                bm25_texts = self._bm25_search(query, k=k)
+                exp_results = self._rrf_merge(faiss_texts, bm25_texts, k=k)
+
+            # ── Rules: semantic only ──
             rules_docs = self.rules_store.similarity_search(query, k=2)
-            results.extend(rules_docs)
+            rules_texts = [d.page_content for d in rules_docs]
 
         except Exception as e:
             err = str(e)
             if "insufficient_quota" in err:
                 print(
-                    "  [RAG] ⚠ OpenAI quota exhausted — RAG retrieval skipped. "
+                    "  [RAG] OpenAI quota exhausted — RAG retrieval skipped. "
                     "Please top up at platform.openai.com/account/billing."
                 )
             elif "429" in err or "rate_limit" in err:
-                print("  [RAG] ⚠ Embedding API rate limited — skipping retrieval.")
+                print("  [RAG] Embedding API rate limited — skipping retrieval.")
             else:
-                print(f"  [RAG] ⚠ Retrieval failed ({type(e).__name__}) — skipping.")
+                print(f"  [RAG] Retrieval failed ({type(e).__name__}) — skipping.")
             return ""
-        if not results:
+
+        combined = exp_results + rules_texts
+        if not combined:
             return ""
-        return "\n\n---\n\n".join([d.page_content for d in results])
+        return "\n\n---\n\n".join(combined)
+
+    def _faiss_exp_search(self, query: str, k: int) -> list[str]:
+        if self.exp_store is None:
+            return []
+        docs = self.exp_store.similarity_search(query, k=k)
+        return [d.page_content for d in docs]
+
+    def _bm25_search(self, query: str, k: int) -> list[str]:
+        if self._bm25_index is None or not self._bm25_corpus:
+            return []
+        tokens = self._tokenize(query)
+        scores = self._bm25_index.get_scores(tokens)
+        top_indices = sorted(range(len(scores)), key=lambda i: scores[i], reverse=True)[:k]
+        return [self._bm25_corpus[i] for i in top_indices if scores[i] > 0]
+
+    @staticmethod
+    def _rrf_merge(
+        faiss_results: list[str],
+        bm25_results: list[str],
+        k: int = 3,
+        rrf_k: int = 60,
+    ) -> list[str]:
+        """
+        Reciprocal Rank Fusion: score = sum(1 / (rrf_k + rank)) across both lists.
+        rrf_k=60 is the standard constant from the original RRF paper.
+        """
+        scores: dict[str, float] = {}
+        for rank, text in enumerate(faiss_results):
+            scores[text] = scores.get(text, 0.0) + 1.0 / (rrf_k + rank + 1)
+        for rank, text in enumerate(bm25_results):
+            scores[text] = scores.get(text, 0.0) + 1.0 / (rrf_k + rank + 1)
+        ranked = sorted(scores.keys(), key=lambda t: scores[t], reverse=True)
+        return ranked[:k]
 
 
     def add_experience(self, text: str, metadata: dict | None = None):
-        """Add a high-quality experience entry to FAISS."""
+        """Add a high-quality experience entry to FAISS + BM25."""
         doc = Document(
             page_content=text,
             metadata={**(metadata or {}), "source": "reflexion"},
         )
         if self.exp_store is None:
-            self.exp_store=FAISS.from_documents([doc], self.embeddings)
+            self.exp_store = FAISS.from_documents([doc], self.embeddings)
         else:
             self.exp_store.add_documents([doc])
         self.exp_store.save_local(self.exp_index_path)
+        self._add_to_bm25(text)
 
 
 # ***************************************************************
