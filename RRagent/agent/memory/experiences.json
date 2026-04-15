@@ -2252,5 +2252,184 @@
         "in_rag": true
       }
     ]
+  },
+  {
+    "game_id": "fb156e3f",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "China Consolidation",
+    "avg_score": 10.0,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_fb156e_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Resolve Transport Bottleneck",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][China Consolidation] Japan purchased 2 fighters (20 PU) and 1 artillery (4 PU), totaling 24 PU, but failed to address the transport bottleneck with only 2 transports available for 6 infantry on Japan. Should have purchased 1 transport (7 PU) and 2 infantry (6 PU) to enable effective troop deployment to mainland Asia.",
+        "rag_text": "[Round 4][Purchase Units][Mid][China Consolidation] Japan purchased 2 fighters (20 PU) and 1 artillery (4 PU), totaling 24 PU, but failed to address the transport bottleneck with only 2 transports available for 6 infantry on Japan. Should have purchased 1 transport (7 PU) and 2 infantry (6 PU) to enable effective troop deployment to mainland Asia.\n[Principle] When japan_land ≥ 6 and transports ≤ 2, prioritize buying transports over additional land units to ensure effective deployment.",
+        "generalized_principle": "When japan_land ≥ 6 and transports ≤ 2, prioritize buying transports over additional land units to ensure effective deployment.",
+        "structured": {
+          "trigger": "Round 4, Japan has 6 infantry on island, only 2 transports available, China has 4 infantry in Yunnan.",
+          "mistake": "Round 4 Purchase: bought 2 fighters instead of 1 transport and 2 infantry, leaving infantry stranded on Japan.",
+          "action": "In Purchase Units phase of round 4, buy 1 transport and 2 infantry to resolve transport bottleneck.",
+          "expected_outcome": "Enable transport of 4 infantry to mainland, increasing pressure on Chinese territories.",
+          "legal_action_required": "buy 1 transport, buy 2 infantry"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 2,
+          "generalization": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_fb156e_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Capture Kwangtung",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][China Consolidation] Japan attempted to capture Kwangtung but failed due to insufficient forces. Attacked with 2 infantry and 1 artillery from Kwangsi against 3 UK infantry, resulting in a failed attack. Should have committed 3 infantry and 1 artillery to ensure a successful capture.",
+        "rag_text": "[Round 5][Combat Move][Mid][China Consolidation] Japan attempted to capture Kwangtung but failed due to insufficient forces. Attacked with 2 infantry and 1 artillery from Kwangsi against 3 UK infantry, resulting in a failed attack. Should have committed 3 infantry and 1 artillery to ensure a successful capture.\n[Principle] Always commit ≥ 1.5x defender count when attacking; if ratio < 1.5, add aircraft support or defer to next round.",
+        "generalized_principle": "Always commit ≥ 1.5x defender count when attacking; if ratio < 1.5, add aircraft support or defer to next round.",
+        "structured": {
+          "trigger": "Round 5, Kwangtung has 3 UK infantry defenders, Japan has 2 infantry + 1 artillery in Kwangsi available.",
+          "mistake": "Round 5 Combat Move: attacked Kwangtung with insufficient forces, resulting in failure.",
+          "action": "In Combat Move phase of round 5, attack Kwangtung with 3 infantry and 1 artillery from Kwangsi.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), open route to French Indo-China next round.",
+          "legal_action_required": "attack Kwangtung with 3 infantry 1 artillery from Kwangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2,
+          "generalization": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_fb156e_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Reinforce Kiangsu",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][China Consolidation] Japan moved 2 infantry from Manchuria to Kiangsu to prepare for future operations against Yunnan and Kwangtung. This move was necessary to bolster forces in the region and maintain pressure on Chinese territories.",
+        "rag_text": "[Round 5][Noncombat Move][Mid][China Consolidation] Japan moved 2 infantry from Manchuria to Kiangsu to prepare for future operations against Yunnan and Kwangtung. This move was necessary to bolster forces in the region and maintain pressure on Chinese territories.\n[Principle] In NCM, always reinforce staging areas with sufficient infantry to maintain offensive momentum in adjacent territories.",
+        "generalized_principle": "In NCM, always reinforce staging areas with sufficient infantry to maintain offensive momentum in adjacent territories.",
+        "structured": {
+          "trigger": "Round 5, Kiangsu has 3 infantry, Manchuria has 2 infantry available for reinforcement, Yunnan has 2 Chinese infantry.",
+          "mistake": "Round 5 Noncombat Move: delayed reinforcement to Kiangsu, risking insufficient forces for future operations.",
+          "action": "In Noncombat Move phase of round 5, move 2 infantry from Manchuria to Kiangsu to reinforce for future attacks.",
+          "expected_outcome": "Strengthen Kiangsu for future operations, maintain pressure on Yunnan and Kwangtung.",
+          "legal_action_required": "move 2 infantry from Manchuria to Kiangsu"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2,
+          "generalization": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_fb156e_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Early",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Increase Ground Forces",
+        "round": 2,
+        "text": "[Round 2][Purchase Units][Early][China Consolidation] Japan purchased 1 battleship (20 PU) and 1 infantry (3 PU), totaling 23 PU, which was an inefficient allocation of resources given the need for ground forces in China. Should have purchased 3 infantry (9 PU) and 1 artillery (4 PU) to strengthen land operations.",
+        "rag_text": "[Round 2][Purchase Units][Early][China Consolidation] Japan purchased 1 battleship (20 PU) and 1 infantry (3 PU), totaling 23 PU, which was an inefficient allocation of resources given the need for ground forces in China. Should have purchased 3 infantry (9 PU) and 1 artillery (4 PU) to strengthen land operations.\n[Principle] Prioritize ground forces over naval units when immediate land operations are critical to strategic goals.",
+        "generalized_principle": "Prioritize ground forces over naval units when immediate land operations are critical to strategic goals.",
+        "structured": {
+          "trigger": "Round 2, Japan has 3 infantry in Kiangsu, China has 5 infantry in Yunnan, naval superiority not contested.",
+          "mistake": "Round 2 Purchase: bought 1 battleship instead of 3 infantry and 1 artillery, weakening ground operations.",
+          "action": "In Purchase Units phase of round 2, buy 3 infantry and 1 artillery to support land operations in China.",
+          "expected_outcome": "Increase ground force strength in Kiangsu, enabling stronger attacks on Yunnan.",
+          "legal_action_required": "buy 3 infantry, buy 1 artillery"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1,
+          "generalization": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_fb156e_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Early",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Secure Kiangsi",
+        "round": 3,
+        "text": "[Round 3][Combat Move][Early][China Consolidation] Japan successfully captured Kiangsi with overwhelming force, using 4 infantry and 1 artillery from Kwangsi, supported by 5 tactical bombers and 5 fighters from Kiangsu. This ensured a decisive victory and opened a path southward, with a total of 10 attacking units against 2 defenders.",
+        "rag_text": "[Round 3][Combat Move][Early][China Consolidation] Japan successfully captured Kiangsi with overwhelming force, using 4 infantry and 1 artillery from Kwangsi, supported by 5 tactical bombers and 5 fighters from Kiangsu. This ensured a decisive victory and opened a path southward, with a total of 10 attacking units against 2 defenders.\n[Principle] Use overwhelming force to ensure victory in strategically important territories, aiming for a force ratio of at least 2:1.",
+        "generalized_principle": "Use overwhelming force to ensure victory in strategically important territories, aiming for a force ratio of at least 2:1.",
+        "structured": {
+          "trigger": "Round 3, Kiangsi has 2 Chinese infantry defenders, Japan has 4 infantry + 1 artillery in Kwangsi, air support available from Kiangsu.",
+          "mistake": "Round 3 Combat Move: none, executed with overwhelming force ensuring success, but should have noted the specific unit counts for clarity.",
+          "action": "In Combat Move phase of round 3, attack Kiangsi with 4 infantry, 1 artillery, and air support from Kwangsi and Kiangsu.",
+          "expected_outcome": "Capture Kiangsi, compress Chinese forces, and open path to southern territories.",
+          "legal_action_required": "attack Kiangsi with 4 infantry 1 artillery from Kwangsi, air support from Kiangsu"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1,
+          "generalization": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_fb156e_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Early",
+        "strategic_goal": "China Consolidation",
+        "tactical_goal": "Optimize Transport Usage",
+        "round": 3,
+        "text": "[Round 3][Noncombat Move][Early][China Consolidation] Japan failed to utilize transports effectively, leaving 2 transports idle in 6 Sea Zone while 4 infantry remained on Japan. Should have transported 2 infantry to mainland to support operations in China.",
+        "rag_text": "[Round 3][Noncombat Move][Early][China Consolidation] Japan failed to utilize transports effectively, leaving 2 transports idle in 6 Sea Zone while 4 infantry remained on Japan. Should have transported 2 infantry to mainland to support operations in China.\n[Principle] Dispatch all empty transports every NCM — an idle transport is 7 PU wasted per round.",
+        "generalized_principle": "Dispatch all empty transports every NCM — an idle transport is 7 PU wasted per round.",
+        "structured": {
+          "trigger": "Round 3, Japan has 4 infantry on island, 2 transports idle in 6 Sea Zone, China has 3 infantry in Yunnan.",
+          "mistake": "Round 3 Noncombat Move: left 2 transports idle, failing to reinforce mainland operations.",
+          "action": "In Noncombat Move phase of round 3, transport 2 infantry from Japan to mainland via 6 Sea Zone.",
+          "expected_outcome": "Increase ground forces on mainland, enhancing operational capability in China.",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to mainland"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1,
+          "generalization": 2
+        },
+        "in_rag": true
+      }
+    ]
   }
 ]

@@ -341,6 +341,10 @@ class _StateCache:
     Caches the last game state snapshot (territory → units mapping).
     On second+ call, returns only the diff instead of the full state.
     Reset at the start of each phase to guarantee a fresh full state.
+
+    Committed tracking: records units that have already moved this phase.
+    These units are annotated in state output so the LLM knows they cannot
+    move again (critical for Combat Move phase).
     """
 
     def __init__(self):
@@ -348,18 +352,40 @@ class _StateCache:
         self._prev_enemy: dict[str, dict] = {}
         self._prev_pus: int | str = "?"
         self._has_prev = False
+        self._committed: dict[str, dict[str, int]] = {}
 
     def reset(self) -> None:
         self._prev_jp = {}
         self._prev_enemy = {}
         self._prev_pus = "?"
         self._has_prev = False
+        self._committed = {}
+
+    def record_committed(self, to_territory: str, units: list[dict]) -> None:
+        """Record units that arrived at to_territory via a move this phase."""
+        if to_territory not in self._committed:
+            self._committed[to_territory] = {}
+        for u in units:
+            ut = u.get("unitType", "")
+            cnt = u.get("count", 1)
+            self._committed[to_territory][ut] = self._committed[to_territory].get(ut, 0) + cnt
+
+    def _committed_annotation(self, territory: str) -> str:
+        """Return annotation string for committed units in a territory, or empty."""
+        c = self._committed.get(territory)
+        if not c:
+            return ""
+        parts = [f"{_UNIT_SHORT.get(k, k)}×{v}" for k, v in c.items() if v > 0]
+        if not parts:
+            return ""
+        return f" ⚠COMMITTED({' '.join(parts)} already moved, CANNOT move again)"
 
     def get_state_text(self, state: dict) -> str:
         if not self._has_prev:
             self._snapshot(state)
             self._has_prev = True
-            return _compress_state_for_llm(state)
+            base = _compress_state_for_llm(state)
+            return self._inject_committed_annotations(base)
 
         new_jp, new_enemy, new_pus = self._extract(state)
         diff_lines = self._diff(new_jp, new_enemy, new_pus)
@@ -372,6 +398,25 @@ class _StateCache:
 
         header = f"[State Update — {len(diff_lines)} change(s) since last check]"
         return header + "\n" + "\n".join(diff_lines)
+
+    def _inject_committed_annotations(self, state_text: str) -> str:
+        """Append COMMITTED annotations to territory lines in the full state text."""
+        if not self._committed:
+            return state_text
+        lines = state_text.split("\n")
+        out = []
+        for line in lines:
+            annotated = False
+            for terr in self._committed:
+                if line.strip().startswith(terr + ":") or f"] {terr}:" in line or f" {terr}:" in line:
+                    ann = self._committed_annotation(terr)
+                    if ann:
+                        out.append(line + ann)
+                        annotated = True
+                        break
+            if not annotated:
+                out.append(line)
+        return "\n".join(out)
 
     def _snapshot(self, state: dict) -> None:
         self._prev_jp, self._prev_enemy, self._prev_pus = self._extract(state)
@@ -417,8 +462,8 @@ class _StateCache:
         lines.extend(self._diff_territory_group(self._prev_enemy, new_enemy, "Enemy"))
         return lines
 
-    @staticmethod
     def _diff_territory_group(
+        self,
         old: dict[str, dict],
         new: dict[str, dict],
         label: str,
@@ -432,7 +477,8 @@ class _StateCache:
                 continue
             old_str = _fmt_units(old_units) if old_units else "(empty)"
             new_str = _fmt_units(new_units) if new_units else "(empty)"
-            lines.append(f"  △ [{label}] {name}: {old_str} → {new_str}")
+            ann = self._committed_annotation(name)
+            lines.append(f"  △ [{label}] {name}: {old_str} → {new_str}{ann}")
         return lines
 
 
@@ -561,6 +607,20 @@ _SEA_AIR_UNIT_TYPES = frozenset({
     "battleship", "cruiser", "fighter", "tactical_bomber",
     "strategic_bomber", "bomber", "aaGun",
 })
+
+
+def _get_ground_units_in_sz(sz_name: str) -> list[dict]:
+    """Query current state for all Japanese ground units in a sea zone (cargo on transports)."""
+    try:
+        state = _client.get_state()
+        units = state.get("unitsByTerritory", {}).get(sz_name, {})
+        result = []
+        for ut, count in units.items():
+            if ut not in _SEA_AIR_UNIT_TYPES and count > 0:
+                result.append({"unitType": ut, "count": count})
+        return result
+    except Exception:
+        return []
 
 
 def compute_transport_capacity(state: dict) -> str:
@@ -808,14 +868,21 @@ def tool_transport_units(
             "hint": f"Verify {load_sz} is adjacent to {load_from} and has a Japanese transport. Total slots ≤ 2.",
         }, ensure_ascii=False)
 
-    # Step B: transport move sea → sea (must include transport + loaded units together)
-    transport_and_units = units + [{"unitType": "transport", "count": 1}]
+    # Step B: transport move sea → sea
+    # Must include ALL ground units in the sea zone (not just newly loaded ones),
+    # otherwise the game engine rejects with "Transports cannot leave their units".
+    all_ground_in_sz = _get_ground_units_in_sz(load_sz)
+    if all_ground_in_sz:
+        transport_and_units = all_ground_in_sz + [{"unitType": "transport", "count": 1}]
+    else:
+        transport_and_units = units + [{"unitType": "transport", "count": 1}]
+
     r_move = _client.act_move(load_sz, transit_sz, transport_and_units)
     if not r_move.get("ok", False):
         game_err = r_move.get("error", "unknown error")
         print(
             f"  {Colors.RED}[Transport] Step B failed: {load_sz}→{transit_sz} "
-            f"transport+{units}  reason: {game_err}{Colors.RESET}"
+            f"transport+{transport_and_units}  reason: {game_err}{Colors.RESET}"
         )
         return json.dumps({
             "ok": False,
@@ -896,6 +963,10 @@ def tool_move_units(from_territory: str, to_territory: str, units_json: str) -> 
             }, ensure_ascii=False)
 
     result = _client.act_move(from_territory, to_territory, units)
+
+    if result.get("ok", False):
+        _state_cache.record_committed(to_territory, units)
+
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -1127,28 +1198,43 @@ If you do not wish to declare war, call tool_end_turn() immediately.
 
 IRON RULE: Spend ALL PUs this turn (leave at most 2 unspent). Hoarding IPC is a strategic error.
 
-Step 1 (required): call tool_get_state once. Note:
-  - Current PUs
-  - Total Japanese transports across all sea zones
-  - Land units currently in Japan (infantry + artillery + armour)
+Step 1 (required): call tool_get_state once. Record these 3 numbers:
+  - japan_pus:       Current PUs
+  - japan_land:      Total land units in Japan territory (infantry + artillery + armour + mech_infantry)
+  - total_transports: Japanese transports across ALL sea zones (6 SZ + 19 SZ + 20 SZ + 36 SZ etc.)
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+ISLAND TRAP CHECK (evaluate BEFORE buying anything):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Japan is an island. Every land unit on Japan = ZERO combat value until transported.
+
+  IF japan_land ≥ 4 AND total_transports ≤ 2:
+    → 🚨 OUTPUT: "ISLAND TRAP: X land units stuck on Japan with only Y transports!"
+    → Buy transports FIRST: buy min(2, affordable) transports before ANY other unit.
+    → Then spend remaining PUs on armour > artillery > infantry.
+    → Do NOT buy more infantry until transport deficit is resolved.
+
+  IF japan_land ≥ 6 AND total_transports ≤ 3:
+    → ⚠ OUTPUT: "STOCKPILE WARNING: X units on Japan, only Y transports. Buy 1 transport."
+    → Buy 1 transport first, then land units.
+
+  IF japan_land < 4 OR total_transports ≥ 3:
+    → OK: proceed to normal purchase decision tree below.
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
 Step 2 (required): buy according to this decision tree, spending all PUs:
 
-  A) Transports < 3:
+  A) total_transports < 3 (even if Island Trap didn't fire):
      PUs ≥ 14  → buy 2 transports (14 PU) + spend remainder on armour/artillery/infantry
      PUs 7-13  → buy 1 transport (7 PU) + spend remainder
      Goal: always maintain ≥ 3 transports in Japanese-controlled sea zones
 
-  B) Transports ≥ 3 — buy land units by transport efficiency (highest value per slot):
+  B) total_transports ≥ 3 — buy land units by transport efficiency (highest value per slot):
 
      TRANSPORT EFFICIENCY RULE (2 slots per transport):
        1 armour (6 PU)        = fills entire transport alone | Attack 3, best per-slot value
        1 inf + 1 art (7 PU)   = fills transport | artillery boosts infantry attack
        2 infantry (6 PU)      = fills transport | weakest attack, lowest priority
-
-     STOCKPILE WARNING: if Japan land units ≥ 4 AND transports ≤ 2
-       → Do NOT buy more infantry. Buy transports first, then armour.
-       → Infantry stockpiled on Japan = zero combat value (island nation).
 
      Purchase priority order:
        1. armour (6 PU each)     — highest per-slot attack, fills one transport
@@ -1175,6 +1261,14 @@ PHASE GUARD — LEGAL ACTIONS IN COMBAT MOVE:
 ✗ FORBIDDEN: Unloading transports onto FRIENDLY territories — defer to Noncombat Move.
 ✗ FORBIDDEN: Retrying the same action after it fails — skip immediately and move on.
 
+⚠ COMMITTED UNITS RULE (CRITICAL — prevents infinite loops):
+  Units marked "⚠COMMITTED" in the state have ALREADY MOVED this phase.
+  They have ZERO remaining movement points and CANNOT move again.
+  Do NOT include COMMITTED units in any attack plan or tool_move_units call.
+  If a tool_move_units call returns ok=false, the units may have already been moved.
+  After ANY failed move: SKIP that action entirely and move to the next target.
+  NEVER retry a failed move with the same or different destination — the units are spent.
+
 ⚠ CRITICAL CHECK BEFORE EVERY tool_move_units CALL:
   Look up the destination territory owner in the game state.
   If owner == "Japanese" or owner == "Neutral" → this move is ILLEGAL in Combat Move.
@@ -1191,6 +1285,17 @@ POLITICAL RESTRICTIONS:
 
 IRON RULE: Never skip this phase without evaluating at least 3 adjacent enemy territories.
 If tool_move_units is not called, the system will force a re-evaluation.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FREE CAPTURE RULE (check FIRST, before any force ratio evaluation):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Scan ALL enemy territories adjacent to Japanese forces.
+If ANY enemy territory has 0 defenders (empty):
+  → Capture it IMMEDIATELY with 1 infantry from the nearest adjacent territory.
+  → Free IPC should NEVER be left on the table.
+  → No battle odds needed — 0 defenders = guaranteed capture.
+  → Do this BEFORE evaluating other attacks.
+Example: Yunnan has 0 Chinese infantry → move 1 inf from Kwangsi to Yunnan. Done. +2 IPC.
 
 Tool budget (strict — do not exceed to avoid iteration limit):
   tool_get_state           × 1 (once only)
@@ -1337,6 +1442,27 @@ Compute japan_land and empty_tr from get_state. Then declare one of:
   japan_land < 3 OR empty_tr = 0 → continue normally to PHASE A
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+REAR AREA AUDIT (MANDATORY — execute BEFORE transport operations)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Scan these rear territories from get_state: Manchuria, Korea, Jehol.
+Also check Shantung if it has NO adjacent enemy territory.
+
+For EACH rear territory:
+  IF land units ≥ 2 AND territory has NO adjacent enemy territory:
+    → Move ALL land units EXCEPT 1 infantry toward the nearest frontline.
+    → Southern advance route: Manchuria → Shantung → Kiangsu → Kiangsi → Kwangsi
+    → Korea → Shantung → ... (same chain)
+    → Execute each hop as a separate tool_move_units call.
+    → Units can only move 1 territory per NCM, so push them one hop south each round.
+
+  IF Manchuria has ≥ 4 land units with no adjacent enemy:
+    → Output: "🚨 REAR STOCKPILE: Manchuria has X units doing nothing! Moving south."
+    → Move ALL but 1 infantry in one hop (e.g. Manchuria → Shantung).
+
+RATIONALE: Units behind the front are ZERO combat value. Every round they sit idle = wasted.
+This audit takes 1-3 tool calls and is the highest-impact NCM action after transport unloading.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE A — UNLOAD & RETURN (highest priority if troops in transit)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 For every transit sea zone (19 SZ, 20 SZ, 36 SZ, etc.) containing ground units:
@@ -1350,7 +1476,10 @@ For every transit sea zone (19 SZ, 20 SZ, 36 SZ, etc.) containing ground units:
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE B — LOAD & DISPATCH (all empty transports in 6 Sea Zone)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For EVERY empty transport in 6 Sea Zone (repeat per transport):
+⚠ CRITICAL: You MUST dispatch EVERY empty transport. One tool_transport_units call per transport.
+   Count the empty transports in 6 Sea Zone from get_state. Then make that many calls.
+
+For EACH empty transport in 6 Sea Zone:
   1. Select load priority (fill 2 slots):
        armour (2 slots) > inf+art > inf+mech_inf > 2 infantry
   2. Choose DYNAMIC transit sea zone based on current frontline:
@@ -1363,7 +1492,23 @@ For EVERY empty transport in 6 Sea Zone (repeat per transport):
   3. Dispatch:
        tool_transport_units("Japan", "6 Sea Zone", "<transit_sz>", units_json)
 
-If multiple empty transports, execute one tool_transport_units call per transport.
+MULTI-TRANSPORT EXAMPLE (3 empty transports in 6 SZ, Japan has 4 inf + 2 art + 1 armour):
+  Call 1: tool_transport_units("Japan", "6 Sea Zone", "36 Sea Zone",
+            '[{{"unitType":"armour","count":1}}]')                         ← armour fills transport alone
+  Call 2: tool_transport_units("Japan", "6 Sea Zone", "19 Sea Zone",
+            '[{{"unitType":"infantry","count":1}},{{"unitType":"artillery","count":1}}]')  ← inf+art pair
+  Call 3: tool_transport_units("Japan", "6 Sea Zone", "19 Sea Zone",
+            '[{{"unitType":"infantry","count":1}},{{"unitType":"artillery","count":1}}]')  ← another pair
+  → 3 calls = 3 transports dispatched with 5 units. Every transport DEPARTS.
+
+MULTI-TRANSPORT UNLOAD EXAMPLE (2 loaded transports in 19 SZ with inf×2 + art×1 + armour×1):
+  Call 1: tool_move_units("19 Sea Zone", "Kiangsu",
+            '[{{"unitType":"infantry","count":2}},{{"unitType":"artillery","count":1}}]')
+  Call 2: tool_move_units("19 Sea Zone", "Kiangsu",
+            '[{{"unitType":"armour","count":1}}]')
+  Call 3: tool_move_units("19 Sea Zone", "6 Sea Zone",
+            '[{{"unitType":"transport","count":2}}]')                      ← return BOTH transports
+  → Unload ALL cargo first, then return ALL empty transports in one call.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 PHASE C — AIRCRAFT REPOSITIONING
@@ -1508,9 +1653,12 @@ def _invoke_with_retry(
                 )
                 _time.sleep(wait)
                 instruction = (
-                    "IMPORTANT: Previous attempt was interrupted by rate limit. Some actions may have already taken effect.\n"
-                    "First call tool_get_state to check current state, then only execute actions not yet completed.\n"
-                    "Do not repeat already-successful operations.\n\n"
+                    "IMPORTANT: Previous attempt was interrupted by rate limit BEFORE any action could complete.\n"
+                    "NO actions have been executed yet — you MUST still perform ALL required actions for this phase.\n"
+                    "For Purchase phase: you MUST buy units before calling tool_end_turn. Do NOT skip purchasing.\n"
+                    "For Combat Move: you MUST evaluate targets and attack before tool_end_turn.\n"
+                    "For Noncombat Move: you MUST execute transport operations before tool_end_turn.\n"
+                    "Start by calling tool_get_state, then execute the full phase instruction below.\n\n"
                     + instruction
                 )
                 continue
@@ -1645,7 +1793,14 @@ PURCHASE PLAN (serves NEXT round, not this round):
   Units bought now are placed at end of turn — they cannot move or fight until next round.
   Budget: {pus} PUs
 
-  Decision logic:
+  ISLAND TRAP CHECK (evaluate first):
+    japan_land = land units currently on Japan territory
+    total_transports = all Japanese transports across all sea zones
+    IF japan_land ≥ 4 AND total_transports ≤ 2 → buy 2 transports FIRST
+    IF japan_land ≥ 6 AND total_transports ≤ 3 → buy 1 transport FIRST
+    Every unit on Japan = ZERO combat value. Transport deficit must be resolved before buying land units.
+
+  Decision logic (after transport check):
     1. Transport check: if total Japanese transports < 3 → buy 1-2 transports FIRST (7 PU each)
     2. For each NEXT ROUND TARGET: how many additional units are needed at the staging territory?
        Those units must be placed at a factory (Japan/Manchuria) and will take 1-2 rounds to arrive.
@@ -2006,15 +2161,25 @@ def run_full_turn(
                     + instruction
                 )
 
-        # ── Battle phase: skip LLM, directly end turn to minimize delay before NCM ──
+        # ── Battle phase: loop end_turn until all battles are resolved ──
         if step_name == "japaneseBattle":
-            print(f"  {Colors.DIM}[Battle] Auto-resolving — calling end_turn directly{Colors.RESET}")
-            _client.act_end_turn()
-            output = "Battle resolved automatically."
+            _battle_count = 0
+            while True:
+                _battle_count += 1
+                print(f"  {Colors.DIM}[Battle] Resolving battle #{_battle_count}...{Colors.RESET}")
+                _client.act_end_turn()
+                _time.sleep(0.5)
+                _next_phase = _client.get_phase()
+                if _next_phase != "japaneseBattle":
+                    print(f"  {Colors.DIM}[Battle] All {_battle_count} battle(s) resolved → {_next_phase}{Colors.RESET}")
+                    break
+                if _battle_count >= 15:
+                    print(f"  {Colors.RED}[Battle] Safety limit: {_battle_count} end_turn calls, forcing advance{Colors.RESET}")
+                    break
+            output = f"Battle phase complete ({_battle_count} battle(s) resolved)."
             log_entry = f"[{step_name}] {output}"
             game_log.append(log_entry)
             completed_phases.append(step_name)
-            # Immediately continue loop to catch NCM before Bridge auto-advances
             continue
 
         output = _invoke_with_retry(agent, instruction)

@@ -79,10 +79,29 @@ class ReflexionLesson(BaseModel):
     )
     text: str = Field(
         description=(
-            "Full lesson text. MUST start with: [Round N][Phase][Stage][Strategic Goal] "
-            "followed by the lesson in English. Example: "
-            '"[Round 3][Purchase Units][Early][Southern Expansion] '
-            'Japan failed to purchase enough infantry to enable Kwangtung attack..."'
+            "Full lesson text — this is the PRIMARY field used for RAG retrieval, so it must "
+            "contain ALL key information. "
+            "MUST start with: [Round N][Phase][Stage][Strategic Goal] "
+            "Then include: (1) what happened, (2) specific unit counts, (3) what should have been done instead. "
+            "BAD example: '[Round 2][Purchase Units][Early][Southern Expansion] Japan failed to purchase enough infantry.' "
+            "(too vague, no numbers, no corrective action) "
+            "GOOD example: '[Round 2][Purchase Units][Early][Southern Expansion] Japan bought 2 armour (12 PU) "
+            "but only 1 infantry (3 PU), leaving 4 infantry on Japan with only 2 transports. "
+            "Should have bought 1 transport (7 PU) + 2 infantry (6 PU) + 1 armour (6 PU) to resolve the "
+            "transport bottleneck before stockpiling more land units.' "
+            "The text MUST mention concrete numbers (unit counts, PU costs, territory names)."
+        )
+    )
+    generalized_principle: str = Field(
+        description=(
+            "A reusable strategic principle abstracted from this specific lesson. "
+            "Must be applicable across different games, not tied to exact territory states. "
+            "BAD: 'Buy more infantry for Kwangtung' (too specific). "
+            "GOOD: 'When japan_land ≥ 4 and transports ≤ 2, buy transports before infantry — "
+            "island units have zero combat value until shipped.' "
+            "GOOD: 'Always commit ≥ 1.5x defender count when attacking; if ratio < 1.5, "
+            "add aircraft support or defer to next round.' "
+            "GOOD: 'In NCM, dispatch ALL empty transports every round — an idle transport is 7 PU wasted.'"
         )
     )
     trigger: str = Field(
@@ -149,8 +168,14 @@ class CriticVerdict(BaseModel):
     has_specific_mistake: bool = Field(
         description="Does 'mistake' contain round number + territory + unit counts?"
     )
-    total_score: int = Field(description="Sum of the 4 booleans above (0-4)")
-    needs_rewrite: bool = Field(description="True when total_score < 3")
+    text_has_numbers: bool = Field(
+        description="Does 'text' contain at least 2 concrete numbers (unit counts or PU values)?"
+    )
+    principle_is_general: bool = Field(
+        description="Is 'generalized_principle' applicable across different games (not tied to exact territories)?"
+    )
+    total_score: int = Field(description="Sum of the 6 booleans above (0-6)")
+    needs_rewrite: bool = Field(description="True when total_score < 4")
     rewritten_trigger: Optional[str] = Field(
         default=None,
         description="Rewritten trigger with 2+ territories and unit counts"
@@ -166,6 +191,14 @@ class CriticVerdict(BaseModel):
     rewritten_legal_action: Optional[str] = Field(
         default=None,
         description="Rewritten legal_action_required as a specific game action string"
+    )
+    rewritten_text: Optional[str] = Field(
+        default=None,
+        description="Rewritten text with concrete numbers, unit counts, PU costs, and corrective action"
+    )
+    rewritten_principle: Optional[str] = Field(
+        default=None,
+        description="Rewritten generalized_principle that is reusable across games"
     )
 
 
@@ -493,8 +526,9 @@ class ReflexionEngine:
         stored = 0
         for item in scored:
             if item["score"] >= 5:
+                rag_text = item.get("rag_text", item["text"])
                 self.memory.add_experience(
-                    item["text"],
+                    rag_text,
                     metadata={
                         "game_phase": item["game_phase"],
                         "game_stage": item["game_stage"],
@@ -543,18 +577,29 @@ Rules:
 1. "game_phase" must be EXACTLY one of: "Purchase Units", "Combat Move", "Noncombat Move"
 2. "game_stage" must be EXACTLY one of: "Early", "Mid", "Late"
 3. "strategic_goal" must be: "{strategic_goal}"
-4. "text" MUST start with: [Round N][phase][stage][{strategic_goal}] then the lesson
-   Example: "[Round {round_num}][Combat Move][{game_stage}][{strategic_goal}] Japan failed..."
-5. "action" and "legal_action_required" MUST reference real in-game actions:
+4. "text" is the MOST IMPORTANT FIELD — it is used for RAG retrieval in future games.
+   MUST start with: [Round N][phase][stage][{strategic_goal}]
+   Then MUST include ALL of: (a) what happened, (b) specific unit counts and PU costs,
+   (c) what should have been done instead with exact numbers.
+   BAD: "[Round 2][Purchase Units][Early][Southern Expansion] Japan failed to buy enough infantry."
+   GOOD: "[Round 2][Purchase Units][Early][Southern Expansion] Japan bought 2 armour (12 PU) + 1 infantry (3 PU) = 15 PU,
+     leaving 5 infantry stuck on Japan with only 1 transport in 6 SZ. Should have bought 1 transport (7 PU) +
+     1 armour (6 PU) + 1 infantry (3 PU) to fix the transport bottleneck."
+5. "generalized_principle" must be a REUSABLE rule applicable in ANY game, not tied to specific territory states.
+   BAD: "Buy more infantry for Kwangtung" (too specific, useless in a different game state)
+   GOOD: "When japan_land >= 4 and transports <= 2, buy transports before infantry — island units = zero combat value"
+   GOOD: "Always commit >= 1.5x defender count; if ratio < 1.5, add aircraft or defer to next round"
+   GOOD: "Dispatch ALL empty transports every NCM — an idle transport is 7 PU wasted per round"
+6. "action" and "legal_action_required" MUST reference real in-game actions:
    - purchase: "buy 3 infantry", "buy 1 transport"
    - attack: "attack Kwangtung with 3 infantry 1 artillery from Kiangsi"
    - move: "transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone"
    NEVER write "use diplomacy", "negotiate", or any non-game action
-6. "trigger" MUST contain: at least 2 territory names + unit counts for both sides
-7. "mistake" MUST contain: round number + territory name + unit counts
-8. "expected_outcome" MUST be quantifiable: IPC value, territory names, force ratio
-9. Each entry must reference a DIFFERENT round or decision point from the log
-10. "round" field is the game round the lesson primarily references (1 to {round_num})
+7. "trigger" MUST contain: at least 2 territory names + unit counts for both sides
+8. "mistake" MUST contain: round number + territory name + unit counts
+9. "expected_outcome" MUST be quantifiable: IPC value, territory names, force ratio
+10. Each entry must reference a DIFFERENT round or decision point from the log
+11. "round" field is the game round the lesson primarily references (1 to {round_num})
 """
 
     #**************************************************************
@@ -568,24 +613,34 @@ Rules:
 
 Entry to review:
   game_phase: {lesson.game_phase}
+  text: {lesson.text}
   trigger: {lesson.trigger}
   action: {lesson.action}
   mistake: {lesson.mistake}
   legal_action_required: {lesson.legal_action_required}
+  generalized_principle: {lesson.generalized_principle}
 
-Evaluate these 4 criteria (True/False each):
+Evaluate these 6 criteria (True/False each):
 1. has_territory_names: Does "trigger" contain at least 2 specific territory names?
 2. has_unit_counts: Does "trigger" contain concrete unit counts for both sides?
 3. is_executable: Does "action" describe a real game action with territory + unit type + count?
    (reject vague actions like "strengthen forces", "use transport efficiently")
 4. has_specific_mistake: Does "mistake" contain round number + territory name + unit counts?
+5. text_has_numbers: Does "text" contain at least 2 concrete numbers (unit counts, PU costs, or IPC values)?
+   "Japan failed to purchase enough infantry" has ZERO numbers → False.
+   "Japan bought 2 armour (12 PU) but had 5 infantry on Japan with only 1 transport" has 4 numbers → True.
+6. principle_is_general: Is "generalized_principle" a reusable rule NOT tied to specific territories?
+   "Buy more infantry for Kwangtung" → False (too specific).
+   "When japan_land >= 4 and transports <= 2, prioritize transport purchases" → True (reusable).
 
-If total_score < 3, provide rewritten versions for the failing fields.
+If total_score < 4, provide rewritten versions for the failing fields.
 Rewrite examples:
   trigger: "Round 4, Kwangtung defended by 2 UK infantry, Japan has 4 infantry + 1 artillery in Kiangsi"
   action: "In Combat Move round 4, move 4 infantry + 1 artillery from Kiangsi to attack Kwangtung"
   mistake: "Round 3 Purchase: bought 2 infantry instead of 3 for Kwangtung push, Kwangtung still UK-controlled in round 5"
   legal_action: "attack Kwangtung with 4 infantry 1 artillery"
+  text: "[Round 3][Purchase Units][Early][Southern Expansion] Japan bought 2 infantry (6 PU) instead of 3 (9 PU), leaving only 2 infantry available to attack Kwangtung which has 3 UK defenders. Should have bought 3 infantry to achieve 1.5x force ratio."
+  principle: "Always ensure attacking force >= 1.5x defenders before committing. If short, buy the deficit in Purchase or add aircraft support."
 """
         verdict = self._invoke_with_rate_limit_retry(
             lambda: self.critic_llm.invoke(prompt),
@@ -600,7 +655,8 @@ Rewrite examples:
             strategic_goal=lesson.strategic_goal,
             tactical_goal=lesson.tactical_goal,
             round=lesson.round,
-            text=lesson.text,
+            text=verdict.rewritten_text or lesson.text,
+            generalized_principle=verdict.rewritten_principle or lesson.generalized_principle,
             trigger=verdict.rewritten_trigger or lesson.trigger,
             mistake=verdict.rewritten_mistake or lesson.mistake,
             action=verdict.rewritten_action or lesson.action,
@@ -618,11 +674,12 @@ Rewrite examples:
         round_num: int,
     ) -> dict:
         """
-        Scoring dimensions (max 10 points):
+        Scoring dimensions (max 12 points, capped to 10 for star display):
           format          0-2  text prefix format correct + game_phase valid
           specificity     0-3  trigger contains number + territory name + unit name
           actionability   0-3  action contains territory + unit + legal_action non-empty
           reproducibility 0-2  mistake contains round number + territory name
+          generalization  0-2  text has numbers + principle is general
         """
         text = lesson.text
 
@@ -651,13 +708,27 @@ Rewrite examples:
             score_rep += 1
         if any(t in lesson.mistake for t in _TERRITORY_HINTS): score_rep += 1
 
-        total = min(10, score_fmt + score_spc + score_act + score_rep)
+        # generalization (new dimension)
+        score_gen = 0
+        numbers_in_text = len(re.findall(r'\d+', text))
+        if numbers_in_text >= 2:                               score_gen += 1
+        principle = getattr(lesson, 'generalized_principle', '')
+        if principle and len(principle) > 20 and not any(
+            t in principle for t in ["Kwangtung", "Kiangsi", "Manchuria", "Borneo"]
+        ):
+            score_gen += 1
+
+        total = min(10, score_fmt + score_spc + score_act + score_rep + score_gen)
         filled = min(5, round(total / 2))
         stars = "★" * filled + "☆" * (5 - filled)
 
         phase_short = {"Purchase Units": "purchase", "Combat Move": "combat",
                        "Noncombat Move": "ncm"}.get(lesson.game_phase, "misc")
         entry_id = f"exp_{game_id[:6]}_{round_num}_{phase_short}"
+
+        rag_text = text
+        if principle and principle.strip():
+            rag_text = f"{text}\n[Principle] {principle.strip()}"
 
         return {
             "id":             entry_id,
@@ -666,7 +737,9 @@ Rewrite examples:
             "strategic_goal": lesson.strategic_goal,
             "tactical_goal":  lesson.tactical_goal,
             "round":          lesson.round,
-            "text":           lesson.text,
+            "text":           text,
+            "rag_text":       rag_text,
+            "generalized_principle": principle,
             "structured": {
                 "trigger":               lesson.trigger,
                 "mistake":               lesson.mistake,
@@ -681,6 +754,7 @@ Rewrite examples:
                 "specificity":    score_spc,
                 "actionability":  score_act,
                 "reproducibility": score_rep,
+                "generalization": score_gen,
             },
             "in_rag": total >= 5,
         }
