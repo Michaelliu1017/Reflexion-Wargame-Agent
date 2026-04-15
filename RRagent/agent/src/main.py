@@ -13,7 +13,7 @@ from pyBanner import banner, info, effect
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-from agent import run_full_turn, LLM_MODEL
+from agent import run_full_turn, _summarize_round, _reassess_strategy, LLM_MODEL
 from bridge_client import TripleABridgeClient
 from memory import GameMemory, ReflexionEngine
 
@@ -157,13 +157,22 @@ def run_game(milestone_id: str = "m1"):
 
     game_id = str(uuid.uuid4())[:8]
     game_log = []
+    round_summaries: list[str] = []
     current_round = 0
 
     while current_round < milestone["max_rounds"]:
         current_round += 1
         print(f"\n[Round {current_round} / {milestone['max_rounds']}]")
 
-        # Wait for our turn (other players may be moving, or bridge may not be up yet)
+        # ── Layer 3: Strategic Reassessment every 2 rounds (starting round 2) ──
+        if current_round >= 2 and current_round % 2 == 0:
+            strategic_goal = _reassess_strategy(
+                round_num=current_round,
+                current_goal=strategic_goal,
+                round_summaries=round_summaries,
+            )
+
+        # Wait for our turn
         print("  Waiting for Japanese turn (Bridge must be running)...")
         dots = 0
         while not _client.is_our_turn():
@@ -172,7 +181,6 @@ def run_game(milestone_id: str = "m1"):
             if dots % 6 == 0:
                 print("  Still waiting... ensure game + bridge are running on port 8081")
 
-        # Detect which phase we're starting at (may be mid-turn if reconnecting)
         current_phase = _client.get_phase()
         print(f"  Japanese turn detected! Starting at phase: {current_phase}")
 
@@ -182,18 +190,22 @@ def run_game(milestone_id: str = "m1"):
             k=2,
         )
 
-        # Run full Japanese turn
+        # Run full Japanese turn (with cross-round memory)
         turn_log = run_full_turn(
             rag_context=rag_context,
             start_phase=current_phase,
             memory=memory,
             round_num=current_round,
             strategic_goal=strategic_goal,
+            prev_round_summaries=round_summaries,
         )
         game_log.extend(turn_log)
 
+        # ── Cross-round memory: summarize this round for future rounds ──
+        summary = _summarize_round(current_round, turn_log)
+        round_summaries.append(summary)
+
         # Safety check: if our turn didn't fully complete (rare race condition).
-        # If other AIs ran fast and round N+1 has already started, skip — let main loop handle it.
         for _retry in range(3):
             time.sleep(3)
             try:
@@ -214,6 +226,7 @@ def run_game(milestone_id: str = "m1"):
                     memory=memory,
                     round_num=current_round,
                     strategic_goal=strategic_goal,
+                    prev_round_summaries=round_summaries,
                 )
                 game_log.extend(extra_log)
             except Exception:

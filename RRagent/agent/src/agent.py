@@ -1558,6 +1558,274 @@ def _phase_rag_query(
 
 
 # ─────────────────────────────────────────────────────────────
+# Layer 2 — Round Plan: unified plan generated before phase loop
+# ─────────────────────────────────────────────────────────────
+
+_ROUND_PLAN_PROMPT = """You are planning Japan's turn in Axis & Allies Pacific 1940.
+Round: {round_num} | Stage: {stage} | Strategic Goal: {strategic_goal}
+Japan PUs: {pus}
+
+Current board state:
+{compressed_state}
+
+{prev_rounds_section}
+
+{rag_section}
+
+Generate a ROUND PLAN using the following 3-step chain of thought, then a Purchase Plan.
+Complete each step in order. Every statement must reference specific territory names and unit counts.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+STEP 1 — STRATEGIC DIRECTION & TARGET EVALUATION
+  State the overall strategic direction (e.g. "Southern Expansion toward India").
+  List ALL candidate attack targets (every enemy territory adjacent to Japanese forces).
+  For each candidate, note: owner, defender units, adjacent Japanese units.
+
+STEP 2 — ATTACK FEASIBILITY (evaluate EVERY candidate from Step 1)
+  For each candidate target:
+    a) At war with the owner? (if not → BLOCKED)
+    b) Defender units and defense power
+    c) All Japanese units that can reach it this round (list origins)
+    d) Force ratio (attackers / defenders)
+
+  Decision per target:
+    ratio >= 1.5 → GO
+    ratio 1.0-1.5 → BORDERLINE — check if aircraft support pushes above 1.5
+    ratio < 1.0 or not at war → NO-GO
+
+  Output two lists:
+    THIS ROUND ATTACKS: [all GO targets — exact units, origins, aircraft support]
+    NEXT ROUND TARGETS: [all NO-GO targets worth staging toward — for each one:
+      staging territory (friendly, adjacent to target), current units there, units still needed for ratio >= 1.5]
+
+STEP 3 — NONCOMBAT MOVE PLAN (transport + ground redeployment, unified)
+  This step plans ALL noncombat moves. Execute in this priority order during NCM phase:
+
+  PRIORITY 1 — UNLOAD TRANSPORTS AT FRONTLINE
+    For each sea zone with a LOADED Japanese transport (ground units aboard):
+      → Is there a friendly/empty coastal territory adjacent to unload?
+        Yes → "UNLOAD: land [units] from [SZ] at [territory]"
+              "RETURN: move empty transport from [SZ] → 6 Sea Zone"
+        No  → "HOLD: transport at [SZ] with [units] — land next round"
+
+  PRIORITY 2 — RETURN EMPTY FRONTLINE TRANSPORTS
+    For each sea zone with an EMPTY Japanese transport (not in 6 SZ):
+      → "RETURN: move empty transport from [SZ] → 6 Sea Zone"
+
+  PRIORITY 3 — GROUND FORCE REDEPLOYMENT
+    Goal: move surplus units from low-threat rear toward frontline staging territories.
+    a) Identify rear territories with units but NO adjacent enemies (e.g. Manchuria, Shantung if secured).
+    b) For each NEXT ROUND TARGET, identify staging territory and unit deficit.
+    c) Plan move chains: rear → mid → staging territory.
+       Example: "2 inf from Manchuria → Shantung → Kiangsu → Kiangsi (staging for Kwangtung)"
+    d) After pulling units, verify each territory keeps >= 1 infantry.
+       If not → backfill from its neighbor.
+    e) Backfill territories thinned by THIS ROUND ATTACKS.
+
+    Output all ground moves:
+      Move 1: [X units] from [Origin] → [Destination] — Reason: [why]
+      Move 2: ...
+
+  PRIORITY 4 — LOAD & DISPATCH FROM 6 SEA ZONE
+    For each EMPTY transport in 6 Sea Zone:
+      → If Japan has land units available:
+        Pick cargo (priority: armour > inf+art > 2 inf)
+        Choose destination SZ adjacent to a NEXT ROUND TARGET's coast:
+          target on China coast → 19 or 20 SZ
+          target Kwangtung/Kwangsi → 36 SZ
+          target FIC/Burma → 36 or 37 SZ
+        "LOAD: [units] from Japan onto transport at 6 SZ → dispatch to [SZ] (for [target])"
+      → If Japan has no land units:
+        "IDLE: transport at 6 SZ — no cargo until next purchase"
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+PURCHASE PLAN (serves NEXT round, not this round):
+  Units bought now are placed at end of turn — they cannot move or fight until next round.
+  Budget: {pus} PUs
+
+  Decision logic:
+    1. Transport check: if total Japanese transports < 3 → buy 1-2 transports FIRST (7 PU each)
+    2. For each NEXT ROUND TARGET: how many additional units are needed at the staging territory?
+       Those units must be placed at a factory (Japan/Manchuria) and will take 1-2 rounds to arrive.
+    3. Backfill: if THIS ROUND ATTACKS will leave territories thin, buy replacement infantry.
+    4. Spend remaining PUs on armour (best transport value) > artillery > infantry.
+    5. Leave at most 2 PUs unspent.
+
+  Output:
+    Items: [unit list with per-unit cost and total]
+    Placement plan: [which units go to which factory territory in Place phase]
+    Reason: [how these units serve next round's attacks and staging]
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Output the complete plan now. Be concrete — no vague statements.
+"""
+
+
+def _generate_round_plan(
+    round_num: int,
+    strategic_goal: str,
+    prev_round_summaries: list[str] | None = None,
+    rag_context: str = "",
+) -> str:
+    """
+    Layer 2: Generate a unified Round Plan before the phase loop.
+    One LLM call (~2000 tokens) that coordinates Purchase/Combat/NCM.
+    """
+    state = _client.get_state()
+    compressed = _compress_state_for_llm(state)
+    pus = state.get("japan", {}).get("pus", "?")
+
+    stage = "Early" if round_num <= 3 else ("Mid" if round_num <= 6 else "Late")
+
+    prev_section = ""
+    if prev_round_summaries:
+        prev_text = "\n".join(prev_round_summaries[-3:])
+        prev_section = f"Previous rounds:\n{prev_text}"
+
+    rag_section = ""
+    if rag_context and rag_context.strip():
+        rag_section = f"Relevant experience from past games:\n{rag_context.strip()}"
+
+    prompt = _ROUND_PLAN_PROMPT.format(
+        round_num=round_num,
+        stage=stage,
+        strategic_goal=strategic_goal,
+        pus=pus,
+        compressed_state=compressed,
+        prev_rounds_section=prev_section,
+        rag_section=rag_section,
+        next_round=round_num + 1,
+    )
+
+    try:
+        llm = ChatOpenAI(model=LLM_MODEL, temperature=0.1)
+        response = llm.invoke(prompt)
+        plan_text = response.content.strip()
+        print(f"\n{Colors.CYAN}{'━'*60}{Colors.RESET}")
+        print(f"{Colors.CYAN}{Colors.BOLD}  ROUND PLAN — Round {round_num}{Colors.RESET}")
+        print(f"{Colors.CYAN}{'━'*60}{Colors.RESET}")
+        for line in plan_text.split("\n"):
+            print(f"  {Colors.CYAN}{line}{Colors.RESET}")
+        print(f"{Colors.CYAN}{'━'*60}{Colors.RESET}\n")
+        return plan_text
+    except Exception as e:
+        print(f"  {Colors.RED}[Round Plan] Generation failed: {e}{Colors.RESET}")
+        return ""
+
+
+# ─────────────────────────────────────────────────────────────
+# Round Summary: compress a round's game_log into one paragraph
+# ─────────────────────────────────────────────────────────────
+
+def _summarize_round(round_num: int, game_log: list[str]) -> str:
+    """
+    Layer 2 support: compress one round's game_log into a 2-3 line summary.
+    Uses a cheap model to minimize cost. Fed into next round's plan generation.
+    """
+    if not game_log:
+        return f"Round {round_num}: No actions recorded."
+
+    log_text = "\n".join(game_log[-20:])
+    prompt = (
+        f"Summarize Japan's Round {round_num} in Axis & Allies Pacific 1940.\n"
+        f"Game log:\n{log_text}\n\n"
+        f"Write exactly 2-3 sentences. Include: territories attacked/captured, "
+        f"units purchased, key troop movements, and IPC changes. Be specific with names and numbers."
+    )
+
+    try:
+        llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+        response = llm.invoke(prompt)
+        summary = f"Round {round_num}: {response.content.strip()}"
+        print(f"  {Colors.DIM}[Round Summary] {summary}{Colors.RESET}")
+        return summary
+    except Exception as e:
+        print(f"  {Colors.DIM}[Round Summary] Failed: {e}{Colors.RESET}")
+        return f"Round {round_num}: (summary unavailable)"
+
+
+# ─────────────────────────────────────────────────────────────
+# Layer 3 — Strategic Reassessment (every 2 rounds)
+# ─────────────────────────────────────────────────────────────
+
+_STRATEGY_REASSESS_PROMPT = """You are Japan's supreme strategist in Axis & Allies Pacific 1940.
+Round: {round_num} | Current Strategy: {current_goal}
+
+Board state:
+{compressed_state}
+
+History:
+{round_summaries}
+
+Evaluate the current strategic direction. Consider:
+1. Is the primary target (India/DEI/Pacific) achievable within 2-3 rounds?
+2. Are enemy defenses too strong on the current axis of advance?
+3. Is there a better opportunity elsewhere (weaker enemy, higher IPC value)?
+
+Output EXACTLY this format:
+
+STRATEGIC ASSESSMENT — Round {round_num}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Current Goal: {current_goal}
+Status: [ON TRACK / BEHIND SCHEDULE / BLOCKED]
+Reason: [1 sentence — why this status?]
+Recommendation: [CONTINUE / PIVOT]
+New Goal: [same as current if CONTINUE, or new goal if PIVOT — choose from: "Southern Expansion", "Pacific Dominance", "China Consolidation", "DEI Resource Grab"]
+Key Adjustment: [1 concrete change, e.g. "Shift 60% of purchases to naval units" or "No change needed"]
+"""
+
+
+def _reassess_strategy(
+    round_num: int,
+    current_goal: str,
+    round_summaries: list[str],
+) -> str:
+    """
+    Layer 3: Reassess strategic direction every 2 rounds.
+    Returns the (possibly updated) strategic goal string.
+    """
+    state = _client.get_state()
+    compressed = _compress_state_for_llm(state)
+    summaries_text = "\n".join(round_summaries) if round_summaries else "(first assessment)"
+
+    prompt = _STRATEGY_REASSESS_PROMPT.format(
+        round_num=round_num,
+        current_goal=current_goal,
+        compressed_state=compressed,
+        round_summaries=summaries_text,
+    )
+
+    try:
+        llm = ChatOpenAI(model=LLM_MODEL, temperature=0.1)
+        response = llm.invoke(prompt)
+        text = response.content.strip()
+
+        print(f"\n{Colors.MAGENTA}{'━'*60}{Colors.RESET}")
+        print(f"{Colors.MAGENTA}{Colors.BOLD}  STRATEGIC REASSESSMENT — Round {round_num}{Colors.RESET}")
+        print(f"{Colors.MAGENTA}{'━'*60}{Colors.RESET}")
+        for line in text.split("\n"):
+            print(f"  {Colors.MAGENTA}{line}{Colors.RESET}")
+        print(f"{Colors.MAGENTA}{'━'*60}{Colors.RESET}\n")
+
+        new_goal = current_goal
+        for line in text.split("\n"):
+            if line.strip().startswith("New Goal:"):
+                candidate = line.split(":", 1)[1].strip().strip('"').strip("'")
+                if candidate and candidate != current_goal:
+                    new_goal = candidate
+                    print(f"  {Colors.MAGENTA}{Colors.BOLD}[Strategy] PIVOT: {current_goal} → {new_goal}{Colors.RESET}")
+                break
+
+        return new_goal
+    except Exception as e:
+        print(f"  {Colors.RED}[Strategy] Reassessment failed: {e}{Colors.RESET}")
+        return current_goal
+
+
+# ─────────────────────────────────────────────────────────────
 # run_full_turn()
 # 跑完日本的一整个回合（所有阶段），直到轮到下一个玩家为止
 # ─────────────────────────────────────────────────────────────
@@ -1568,10 +1836,12 @@ def run_full_turn(
     memory=None,
     round_num: int = 1,
     strategic_goal: str = "Southern Expansion",
+    prev_round_summaries: list[str] | None = None,
 ) -> "list[str]":
     """
     Execute a complete Japan turn (or resume from a mid-turn phase).
     start_phase: logged phase name for display; actual execution follows get_phase().
+    prev_round_summaries: cross-round memory from previous rounds (Layer 2 support).
     """
     import time as _time
 
@@ -1579,12 +1849,20 @@ def run_full_turn(
     agent, handler = build_agent(rag_context=rag_context, handler=handler)
     game_log = []
     completed_phases = []
-    phase_log: dict = {}  # carries data across phases within one round (resets each call)
+    phase_log: dict = {}
 
     title = f"from {start_phase}" if start_phase else "full turn"
     print(f"\n{Colors.BOLD}{'='*60}{Colors.RESET}")
     print(f"{Colors.BOLD}  Japan turn start [{title}]{Colors.RESET}")
     print(f"{Colors.BOLD}{'='*60}{Colors.RESET}\n")
+
+    # ── Layer 2: Generate Round Plan before phase loop ──
+    round_plan = _generate_round_plan(
+        round_num=round_num,
+        strategic_goal=strategic_goal,
+        prev_round_summaries=prev_round_summaries,
+        rag_context=rag_context,
+    )
 
     _has_memory = memory is not None
     _has_rag = (
@@ -1615,6 +1893,7 @@ def run_full_turn(
 
     while _client.is_our_turn():
         step_name = _client.get_phase()
+        print(f"  {Colors.DIM}[Loop] get_phase() → {step_name} | completed: {completed_phases}{Colors.RESET}")
 
         if step_name == "unknown":
             _time.sleep(2)
@@ -1645,6 +1924,18 @@ def run_full_turn(
         print_phase_header(_pnum, _pname)
 
         instruction = get_phase_instruction(step_name)
+
+        # ── Layer 2: Inject Round Plan into every action phase ──
+        if round_plan and step_name in (
+            "japanesePurchase", "japaneseCombatMove", "japaneseNonCombatMove", "japanesePlace",
+        ):
+            instruction = (
+                f"[ROUND PLAN — follow this coordinated plan]\n"
+                f"{round_plan}\n"
+                f"{'─'*40}\n\n"
+                + instruction
+            )
+
         phase_rag_text = ""
         if _has_memory:
             q = _phase_rag_query(step_name, round_num, strategic_goal)
@@ -1715,6 +2006,17 @@ def run_full_turn(
                     + instruction
                 )
 
+        # ── Battle phase: skip LLM, directly end turn to minimize delay before NCM ──
+        if step_name == "japaneseBattle":
+            print(f"  {Colors.DIM}[Battle] Auto-resolving — calling end_turn directly{Colors.RESET}")
+            _client.act_end_turn()
+            output = "Battle resolved automatically."
+            log_entry = f"[{step_name}] {output}"
+            game_log.append(log_entry)
+            completed_phases.append(step_name)
+            # Immediately continue loop to catch NCM before Bridge auto-advances
+            continue
+
         output = _invoke_with_retry(agent, instruction)
 
         # ── Extract combat + noncombat plans after Combat Move ───
@@ -1761,10 +2063,19 @@ def run_full_turn(
                     output = output2
                     print(f"  {Colors.WHITE}[Retry] Combat Move re-evaluation complete{Colors.RESET}")
 
-        _time.sleep(1)
-        if _client.get_phase() == step_name and _client.is_our_turn():
-            print(f"  {Colors.RED}[Fallback] Phase {step_name} not advanced — forcing END_TURN{Colors.RESET}")
-            _client.act_end_turn()
+        # Wait for phase to advance, polling quickly to avoid missing fast transitions (e.g. NCM after Battle)
+        for _poll in range(10):
+            _time.sleep(0.2)
+            try:
+                _next = _client.get_phase()
+            except Exception:
+                _next = step_name
+            if _next != step_name:
+                break
+        else:
+            if _client.is_our_turn():
+                print(f"  {Colors.RED}[Fallback] Phase {step_name} not advanced — forcing END_TURN{Colors.RESET}")
+                _client.act_end_turn()
 
         log_entry = f"[{step_name}] {output}"
         game_log.append(log_entry)

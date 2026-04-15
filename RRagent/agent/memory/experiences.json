@@ -803,7 +803,1454 @@
         "in_rag": true
       }
     ]
+  },
+  {
+    "game_id": "943babd5",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.7,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_943bab_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Southern Front",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan's purchase of 2 transports and 2 armour units was effective for mobility but lacked sufficient infantry to maximize transport capacity.",
+        "structured": {
+          "trigger": "Round 4, Japan has 2 transports in 6 Sea Zone, 2 armour in Japan, and 1 infantry in Japan, while UK has 3 infantry in India.",
+          "mistake": "Round 4 Purchase: bought 2 armour and 2 transports but only 1 infantry, leaving transport capacity underutilized.",
+          "action": "In Purchase Units phase of round 5, buy 3 infantry to fully utilize transport capacity for southern expansion.",
+          "expected_outcome": "Maximize transport capacity, enabling full deployment of forces to southern territories.",
+          "legal_action_required": "buy 3 infantry"
+        },
+        "score": 8,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_943bab_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Balance Land Forces",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] The purchase of 2 artillery units was beneficial for balanced land forces but lacked additional infantry to support sustained attacks.",
+        "structured": {
+          "trigger": "Round 5, Japan has 2 artillery in Japan, and 1 infantry in Japan, while the UK has 4 infantry in India.",
+          "mistake": "Round 5 Purchase: bought 2 artillery but only 1 infantry, limiting ground force sustainability in Japan.",
+          "action": "In Purchase Units phase of round 6, buy 2 infantry to support the 2 artillery in Japan and sustain ground attacks in India.",
+          "expected_outcome": "Enhanced ground force sustainability for continued pressure on southern territories.",
+          "legal_action_required": "buy 2 infantry to support artillery in Japan"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_943bab_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Key Territories",
+        "round": 4,
+        "text": "[Round 4][Combat Move][Mid][Southern Expansion] Japan failed to capture key territories due to insufficient forces allocated to the attack.",
+        "structured": {
+          "trigger": "Round 4, Japan has 2 infantry and 1 artillery in Kiangsi, UK has 3 infantry in Kwangtung.",
+          "mistake": "Round 4 Combat Move: attacked Kwangtung with 2 infantry and 1 artillery, insufficient to overcome 3 UK infantry defenders.",
+          "action": "In Combat Move phase of round 5, attack Kwangtung with 3 infantry and 1 artillery from Kiangsi to ensure capture.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), secure position for further southern expansion.",
+          "legal_action_required": "attack Kwangtung with 3 infantry 1 artillery from Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_943bab_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Sea Zones",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan's failure to secure key sea zones limited naval mobility and reinforcement capabilities.",
+        "structured": {
+          "trigger": "Round 5, Japan has 2 transports in 6 Sea Zone, UK has 1 destroyer in 19 Sea Zone.",
+          "mistake": "Round 5 Combat Move: did not attack 19 Sea Zone, allowing UK destroyer to block transport routes.",
+          "action": "In Combat Move phase of round 6, attack 19 Sea Zone with 1 battleship and 1 cruiser to clear transport routes.",
+          "expected_outcome": "Clear 19 Sea Zone, enabling free movement of transports for southern expansion.",
+          "legal_action_required": "attack 19 Sea Zone with 1 battleship 1 cruiser"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_943bab_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Frontlines",
+        "round": 4,
+        "text": "[Round 4][Noncombat Move][Mid][Southern Expansion] Japan failed to adequately reinforce frontlines, leaving key territories vulnerable.",
+        "structured": {
+          "trigger": "Round 4, Japan has 2 infantry in Japan, 2 transports in 6 Sea Zone, UK has 3 infantry in India.",
+          "mistake": "Round 4 Noncombat Move: did not transport 2 infantry from Japan to 19 Sea Zone, leaving southern territories under-defended.",
+          "action": "In Noncombat Move phase of round 5, transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone to reinforce frontlines.",
+          "expected_outcome": "Reinforce southern frontlines, increasing defense and attack capabilities.",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_943bab_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Optimize Transport Routes",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan's transport routes were not optimized, delaying reinforcement of key territories.",
+        "structured": {
+          "trigger": "Round 5, Japan has 2 transports in 6 Sea Zone, UK has 1 destroyer in 19 Sea Zone.",
+          "mistake": "Round 5 Noncombat Move: did not reposition transports to avoid UK destroyer blockade in 19 Sea Zone.",
+          "action": "In Noncombat Move phase of round 6, reposition transports to 20 Sea Zone to bypass UK blockade and reinforce southern territories.",
+          "expected_outcome": "Bypass UK blockade, ensuring timely reinforcement of southern territories.",
+          "legal_action_required": "reposition transports to 20 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "c22fa1fd",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.8,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_c22fa1_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Strengthen Ground Forces",
+        "round": 2,
+        "text": "[Round 2][Purchase Units][Early][Southern Expansion] Japan's purchase of 2 armour, 3 artillery, and 4 infantry was effective in strengthening ground forces for future operations.",
+        "structured": {
+          "trigger": "Round 2, Japan has 19 infantry, 5 artillery, 2 armour in Japan, planning to attack Kwangtung and French Indochina with 3 transports available.",
+          "mistake": "Round 2 Purchase: Did not buy additional transports, limiting mobility for Southern Expansion, which could have included attacks on Kwangtung and French Indochina.",
+          "action": "In Purchase Units phase of round 3, buy 1 transport to increase mobility for Southern Expansion, allowing for potential attacks on Kwangtung and French Indochina.",
+          "expected_outcome": "Increased mobility for ground forces, enabling faster deployment to Southern China.",
+          "legal_action_required": "buy 1 transport to support attacks on Kwangtung and French Indochina"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_c22fa1_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Maximize Transport Efficiency",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan failed to purchase enough transports to efficiently move ground units from Japan to the front lines.",
+        "structured": {
+          "trigger": "Round 4, Japan has 26 land units in Japan and 2 transports in 6 Sea Zone.",
+          "mistake": "Round 4 Purchase: Did not buy additional transports, resulting in 26 land units in Japan being idle.",
+          "action": "In Purchase Units phase of round 5, buy 2 transports to ensure 26 land units can be moved efficiently from Japan.",
+          "expected_outcome": "Efficient movement of all ground units to Southern China, supporting Kwangtung attack.",
+          "legal_action_required": "buy 2 transports to move 26 land units from Japan"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_c22fa1_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Kwangtung",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan did not attack Kwangtung despite having sufficient forces staged in Kiangsi.",
+        "structured": {
+          "trigger": "Round 5, Kwangtung has 3 UK infantry, Japan has 6 fighters, 3 tactical bombers in Kwangsi, and 2 infantry, 1 artillery in Kiangsi.",
+          "mistake": "Round 5 Combat Move: Failed to attack Kwangtung with available forces, missing opportunity to capture territory.",
+          "action": "In Combat Move phase of round 6, attack Kwangtung with 2 infantry, 1 artillery from Kiangsi and air support from Kwangsi.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), weaken UK presence in Southern China.",
+          "legal_action_required": "attack Kwangtung with 2 infantry, 1 artillery from Kiangsi and air support from Kwangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_c22fa1_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Expand Air Support",
+        "round": 6,
+        "text": "[Round 6][Combat Move][Mid][Southern Expansion] Japan failed to reposition air units effectively to support ground operations in Southern China.",
+        "structured": {
+          "trigger": "Round 6, Kiangsi has 2 fighters, Kwangsi has 6 fighters, 3 tactical bombers, planning attack on Kwangtung.",
+          "mistake": "Round 6 Combat Move: Did not reposition 2 additional fighters from Kwangsi to Kiangsi for Kwangtung attack support.",
+          "action": "In Combat Move phase of round 7, reposition 2 additional fighters from Kwangsi to Kiangsi for enhanced air support.",
+          "expected_outcome": "Improved air support for ground operations, increasing success rate of Kwangtung attack.",
+          "legal_action_required": "reposition 2 fighters from Kwangsi to Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_c22fa1_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Efficient Unit Deployment",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan did not fully utilize available transports to move units from Japan to the front.",
+        "structured": {
+          "trigger": "Round 5, Japan has 26 land units in Japan, planning to reinforce Southern China and Kwangtung.",
+          "mistake": "Round 5 Noncombat Move: Only loaded 1 armour and 1 infantry, 1 artillery for Southern China, leaving 24 units idle in Japan.",
+          "action": "In Noncombat Move phase of round 6, load 2 transports with 2 infantry and 1 artillery from Japan to Southern China.",
+          "expected_outcome": "Full deployment of ground forces to Southern China, maximizing pressure on UK territories.",
+          "legal_action_required": "load 2 transports with 2 infantry and 1 artillery from Japan to 36 Sea Zone"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 2,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_c22fa1_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Front Lines",
+        "round": 6,
+        "text": "[Round 6][Noncombat Move][Mid][Southern Expansion] Japan did not adequately reinforce front lines in preparation for the Kwangtung attack.",
+        "structured": {
+          "trigger": "Round 6, Kiangsi has 2 infantry, 1 artillery, Kwangsi has 6 fighters, 3 tactical bombers, planning attack on Kwangtung.",
+          "mistake": "Round 6 Noncombat Move: Failed to move additional infantry from Shantung to Kiangsi, weakening attack preparation.",
+          "action": "In Noncombat Move phase of round 7, move 2 additional infantry from Shantung to Kiangsi to strengthen attack force.",
+          "expected_outcome": "Stronger attack force in Kiangsi, increasing likelihood of capturing Kwangtung.",
+          "legal_action_required": "move 2 infantry from Shantung to Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "61c6decf",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.5,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_61c6de_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Enhance Transport Capacity",
+        "round": 6,
+        "text": "[Round 6][Purchase Units][Mid][Southern Expansion] Japan's purchase of 2 transports was crucial for maintaining momentum in the Southern Expansion strategy, enabling the movement of additional land units to the frontlines.",
+        "structured": {
+          "trigger": "Round 6, Japan has 17 land units, 2 empty transports in 6 Sea Zone, Southern China (Kwangtung/Kwangsi) is the frontline.",
+          "mistake": "Round 5 Purchase: Failed to buy additional transports, limiting the ability to move land units efficiently, Japan has 17 land units and 2 empty transports in 6 Sea Zone.",
+          "action": "In Purchase Units phase of round 6, buy 2 transports to ensure sufficient capacity for moving land units to the frontlines.",
+          "expected_outcome": "Increased transport capacity allows for rapid deployment of 4 additional land units to Southern China, enhancing offensive capabilities.",
+          "legal_action_required": "purchase transports x2"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_61c6de_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Strengthen Land Forces",
+        "round": 6,
+        "text": "[Round 6][Purchase Units][Mid][Southern Expansion] Japan's purchase of 2 armour and 2 artillery was essential to bolster land forces for upcoming offensives in Southern China.",
+        "structured": {
+          "trigger": "Round 6, Japan has 11 infantry, 4 artillery, 2 armour, 2 tactical_bomber, 2 strategic_bomber, 2 fighter in Japan, frontline is Southern China.",
+          "mistake": "Round 5 Purchase: bought 2 infantry instead of 4 artillery and 2 armour for Southern China push, weakening ground attack potential in round 6.",
+          "action": "In Purchase Units phase of round 6, buy 2 armour and 2 artillery to strengthen ground forces for Southern China offensives.",
+          "expected_outcome": "Enhanced ground attack strength with additional armour and artillery, improving odds in Southern China battles.",
+          "legal_action_required": "purchase armour x2, artillery x2"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_61c6de_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture French Indo China",
+        "round": 6,
+        "text": "[Round 6][Combat Move][Mid][Southern Expansion] Japan must focus on capturing French Indo China to secure a strategic foothold in Southeast Asia.",
+        "structured": {
+          "trigger": "Round 6, French Indo China has 3 infantry, 1 artillery; Japan plans to attack with 6 units from Kwangtung.",
+          "mistake": "Round 5 Combat Move: Failed to allocate sufficient forces to French Indo China, missing an opportunity to capture it.",
+          "action": "In Combat Move phase of round 6, attack French Indo China with 6 units from Kwangtung to ensure capture.",
+          "expected_outcome": "Capture French Indo China, gaining IPC and strategic position in Southeast Asia.",
+          "legal_action_required": "attack French Indo China with 6 units from Kwangtung"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_61c6de_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Southern China",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan needs to reinforce Southern China to maintain pressure on Allied forces and prepare for further expansion.",
+        "structured": {
+          "trigger": "Round 5, Southern China (Kwangtung/Kwangsi) is the frontline, Japan has 11 infantry, 4 artillery, 2 armour in Japan.",
+          "mistake": "Round 4 Combat Move: Failed to reinforce Southern China adequately, risking loss of momentum.",
+          "action": "In Combat Move phase of round 5, move 4 infantry and 2 artillery from Japan to Southern China.",
+          "expected_outcome": "Reinforced Southern China positions, maintaining pressure and enabling future offensives.",
+          "legal_action_required": "move 4 infantry and 2 artillery from Japan to Southern China"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_61c6de_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Efficient Unit Deployment",
+        "round": 6,
+        "text": "[Round 6][Noncombat Move][Mid][Southern Expansion] Japan must efficiently deploy units using available transports to maintain offensive momentum in Southern China.",
+        "structured": {
+          "trigger": "Round 6, Japan has 17 land units, 2 empty transports in 6 Sea Zone, frontline is Southern China.",
+          "mistake": "Round 5 Noncombat Move: Inefficient use of transports, leaving 3 units idle in Japan instead of moving them to reinforce Southern China.",
+          "action": "In Noncombat Move phase of round 6, transport 1 armour, 1 infantry, 1 artillery from Japan to 36 Sea Zone to reinforce Southern China.",
+          "expected_outcome": "Efficient deployment of 3 additional units to Southern China, enhancing offensive capabilities.",
+          "legal_action_required": "transport 1 armour, 1 infantry, 1 artillery from Japan to 36 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_61c6de_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Aircraft Repositioning",
+        "round": 6,
+        "text": "[Round 6][Noncombat Move][Mid][Southern Expansion] Japan's repositioning of aircraft to Kwangtung is crucial for supporting ground operations in Southern China.",
+        "structured": {
+          "trigger": "Round 6, 4 fighters in Kiangsi, Kwangtung is the forward base for operations in Southern China.",
+          "mistake": "Round 5 Noncombat Move: Delayed repositioning of aircraft, reducing air support for ground operations.",
+          "action": "In Noncombat Move phase of round 6, move 4 fighters from Kiangsi to Kwangtung to support Southern China operations.",
+          "expected_outcome": "Improved air support for ground operations in Southern China, increasing combat effectiveness.",
+          "legal_action_required": "move fighters x4 from Kiangsi to Kwangtung"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "7421776e",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.7,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_742177_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Burma",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan failed to purchase enough infantry to reinforce Burma, weakening our position against potential Allied counterattacks.",
+        "structured": {
+          "trigger": "Round 4, Burma has 3 UK infantry defenders, Japan has 2 infantry in French Indo-China available",
+          "mistake": "Round 4 Purchase: bought 2 armour instead of 3 infantry, leaving Burma under-defended",
+          "action": "In Purchase Units phase of round 4, buy 3 infantry to reinforce Burma",
+          "expected_outcome": "Strengthen Burma defense, maintain control (IPC +3)",
+          "legal_action_required": "buy 3 infantry"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_742177_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Prepare for Calcutta Assault",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan did not purchase enough naval units to support an assault on Calcutta, limiting our strategic options.",
+        "structured": {
+          "trigger": "Round 5, Bay of Bengal has 1 UK battleship, Japan has 1 carrier and 2 destroyers in 37 Sea Zone",
+          "mistake": "Round 5 Purchase: bought 1 infantry instead of 1 battleship, reducing naval superiority",
+          "action": "In Purchase Units phase of round 5, buy 1 battleship to ensure naval dominance in Bay of Bengal",
+          "expected_outcome": "Naval superiority in Bay of Bengal, enabling Calcutta assault",
+          "legal_action_required": "buy 1 battleship"
+        },
+        "score": 8,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_742177_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Java",
+        "round": 4,
+        "text": "[Round 4][Combat Move][Mid][Southern Expansion] Japan failed to capture Java due to insufficient forces, missing an opportunity to cut off Allied resources.",
+        "structured": {
+          "trigger": "Round 4, Java has 2 UK infantry defenders, Japan has 1 infantry and 1 artillery in Sumatra",
+          "mistake": "Round 4 Combat Move: attacked Java with 1 infantry and 1 artillery, insufficient to capture",
+          "action": "In Combat Move phase of round 4, attack Java with 2 infantry and 1 artillery from Sumatra",
+          "expected_outcome": "Capture Java (IPC +4), disrupt Allied resource flow",
+          "legal_action_required": "attack Java with 2 infantry 1 artillery from Sumatra"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_742177_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Borneo",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan did not allocate enough forces to secure Borneo, allowing Allies to maintain a foothold.",
+        "structured": {
+          "trigger": "Round 5, Borneo has 1 UK infantry defender, Japan has 2 infantry in Celebes",
+          "mistake": "Round 5 Combat Move: attacked Borneo with 1 infantry, failed to secure",
+          "action": "In Combat Move phase of round 5, attack Borneo with 2 infantry from Celebes",
+          "expected_outcome": "Capture Borneo (IPC +4), strengthen resource control",
+          "legal_action_required": "attack Borneo with 2 infantry from Celebes"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_742177_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Philippines",
+        "round": 6,
+        "text": "[Round 6][Noncombat Move][Mid][Southern Expansion] Japan failed to reinforce the Philippines, leaving it vulnerable to Allied counterattacks.",
+        "structured": {
+          "trigger": "Round 6, Philippines has 1 Japanese infantry, 2 US infantry in nearby sea zone",
+          "mistake": "Round 6 Noncombat Move: did not transport additional infantry to Philippines, leaving it under-defended",
+          "action": "In Noncombat Move phase of round 6, transport 2 infantry from Japan to Philippines via 6 Sea Zone",
+          "expected_outcome": "Reinforce Philippines, deter Allied attacks",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to Philippines"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_742177_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Strengthen Malaya",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan did not move enough forces to Malaya, risking loss of control in the region.",
+        "structured": {
+          "trigger": "Round 5, Malaya has 1 Japanese infantry, 3 UK infantry in nearby sea zone",
+          "mistake": "Round 5 Noncombat Move: failed to move additional infantry to Malaya, risking control",
+          "action": "In Noncombat Move phase of round 5, transport 2 infantry from French Indo-China to Malaya",
+          "expected_outcome": "Strengthen Malaya defense, maintain regional control",
+          "legal_action_required": "transport 2 infantry from French Indo-China to Malaya"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "480fd887",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.7,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_480fd8_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Ground Forces",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan failed to purchase transports, limiting the ability to move ground forces effectively for Southern Expansion.",
+        "structured": {
+          "trigger": "Round 5, Japan has 4 infantry in Japan, no transports available in 6 Sea Zone, 2 UK infantry in Kwangtung.",
+          "mistake": "Round 5 Purchase: bought 2 armour, 2 artillery, 2 infantry, but no transports, leaving ground forces immobile.",
+          "action": "In Purchase Units phase of round 6, buy 1 transport to enable movement of ground forces from Japan to 6 Sea Zone.",
+          "expected_outcome": "Enable movement of 4 infantry from Japan to 6 Sea Zone, increasing mobility for Southern Expansion.",
+          "legal_action_required": "buy 1 transport"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_480fd8_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Kwangtung",
+        "round": 6,
+        "text": "[Round 6][Combat Move][Mid][Southern Expansion] Japan failed to capture Kwangtung due to insufficient forces committed to the attack.",
+        "structured": {
+          "trigger": "Round 6, Kwangtung has 2 UK infantry defenders, Japan has 3 infantry + 1 artillery in Kiangsi available.",
+          "mistake": "Round 6 Combat Move: attacked Kwangtung with 3 infantry, 1 artillery, insufficient to overcome 2 UK infantry defenders.",
+          "action": "In Combat Move phase of round 7, attack Kwangtung with 4 infantry, 1 artillery from Kiangsi to ensure capture.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), open route to French Indo-China next round.",
+          "legal_action_required": "attack Kwangtung with 4 infantry 1 artillery from Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_480fd8_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reposition Forces",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan failed to reposition forces effectively due to lack of transports, limiting strategic flexibility.",
+        "structured": {
+          "trigger": "Round 5, Kwangtung has 2 UK infantry, Japan has 4 infantry in Japan, no transports available in 6 Sea Zone.",
+          "mistake": "Round 5 Noncombat Move: unable to transport 4 infantry from Japan to 19 Sea Zone due to no transports in 6 Sea Zone.",
+          "action": "In Noncombat Move phase of round 6, transport 2 infantry from Japan to 19 Sea Zone via 6 Sea Zone once a transport is available.",
+          "expected_outcome": "Reposition 2 infantry to 19 Sea Zone, enhancing strategic options for Southern Expansion.",
+          "legal_action_required": "transport 2 infantry from Japan to 19 Sea Zone via 6 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_480fd8_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Prepare for Expansion",
+        "round": 3,
+        "text": "[Round 3][Purchase Units][Early][Southern Expansion] Japan's purchase of ground units without transports limited early expansion capabilities.",
+        "structured": {
+          "trigger": "Round 3, Japan has 3 infantry in Japan, no transports available in 6 Sea Zone, 2 UK infantry in Kwangtung.",
+          "mistake": "Round 3 Purchase: bought 2 armour, 3 artillery, 4 infantry, but no transports, restricting movement.",
+          "action": "In Purchase Units phase of round 4, buy 1 transport to facilitate movement of ground forces from Japan.",
+          "expected_outcome": "Enable movement of 3 infantry from Japan to 6 Sea Zone, supporting early Southern Expansion.",
+          "legal_action_required": "buy 1 transport"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_480fd8_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Key Territories",
+        "round": 2,
+        "text": "[Round 2][Combat Move][Early][Southern Expansion] Japan missed an opportunity to secure key territories due to insufficient forces committed to attacks.",
+        "structured": {
+          "trigger": "Round 2, Kwangtung has 2 UK infantry defenders, Japan has 2 infantry + 1 artillery in Kiangsi available.",
+          "mistake": "Round 2 Combat Move: attacked Kwangtung with 2 infantry, 1 artillery, insufficient to capture territory.",
+          "action": "In Combat Move phase of round 3, attack Kwangtung with 3 infantry, 1 artillery from Kiangsi to secure territory.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), strengthen position for further expansion.",
+          "legal_action_required": "attack Kwangtung with 3 infantry 1 artillery from Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_480fd8_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Enhance Mobility",
+        "round": 3,
+        "text": "[Round 3][Noncombat Move][Early][Southern Expansion] Japan's failure to move forces effectively limited strategic options for early expansion.",
+        "structured": {
+          "trigger": "Round 3, Japan has 3 infantry in Japan, no transports available in 6 Sea Zone, 2 UK infantry in Kwangtung.",
+          "mistake": "Round 3 Noncombat Move: unable to transport 3 infantry from Japan due to no transports in 6 Sea Zone.",
+          "action": "In Noncombat Move phase of round 4, transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone once transport is available.",
+          "expected_outcome": "Reposition 2 infantry to 19 Sea Zone, enhancing strategic options for early Southern Expansion.",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "14f591a7",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.5,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_14f591_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Land Forces",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan's purchase of only 1 infantry was insufficient to support aggressive land campaigns in Southeast Asia.",
+        "structured": {
+          "trigger": "Round 4, French Indo-China has 3 UK infantry defenders, Japan has 2 infantry + 1 artillery in Kwangsi available",
+          "mistake": "Round 4 Purchase: bought 1 infantry instead of 3, limiting ground assault capabilities in Southeast Asia",
+          "action": "In Purchase Units phase of round 5, buy 3 infantry to prepare for future attacks in Southeast Asia",
+          "expected_outcome": "Increased ground force strength, enabling capture of French Indo-China (IPC +4)",
+          "legal_action_required": "buy 3 infantry to strengthen forces for future attacks"
+        },
+        "score": 8,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_14f591_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Maintain Naval Superiority",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan's focus on land units neglected naval strength, risking transport vulnerabilities.",
+        "structured": {
+          "trigger": "Round 5, Sea Zone 6 has 1 UK destroyer, Japan has 2 transports + 1 battleship in Sea Zone 6",
+          "mistake": "Round 5 Purchase: failed to buy additional naval units, leaving transports exposed to 1 UK destroyer in Sea Zone 6",
+          "action": "In Purchase Units phase of round 6, buy 1 destroyer to protect transports in Sea Zone 6 and maintain naval superiority",
+          "expected_outcome": "Secured transport routes, preventing enemy naval interference",
+          "legal_action_required": "buy 1 destroyer to protect transports in Sea Zone 6"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_14f591_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Key Territories",
+        "round": 4,
+        "text": "[Round 4][Combat Move][Mid][Southern Expansion] Japan missed an opportunity to capture Kwangtung due to insufficient forces.",
+        "structured": {
+          "trigger": "Round 4, Kwangtung has 2 UK infantry defenders, Japan has 3 infantry + 1 artillery in Kiangsi available",
+          "mistake": "Round 4 Combat Move: did not attack Kwangtung despite having a favorable force ratio",
+          "action": "In Combat Move phase of round 5, attack Kwangtung with 3 infantry and 1 artillery from Kiangsi",
+          "expected_outcome": "Capture Kwangtung (IPC +3), open route to Hong Kong",
+          "legal_action_required": "attack Kwangtung with 3 infantry 1 artillery from Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_14f591_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Sea Zones",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan failed to secure the 6 Sea Zone, allowing enemy naval presence to persist.",
+        "structured": {
+          "trigger": "Round 5, 6 Sea Zone has 1 UK destroyer, Japan has 1 battleship in 5 Sea Zone",
+          "mistake": "Round 5 Combat Move: did not engage UK destroyer in 6 Sea Zone, risking transport safety",
+          "action": "In Combat Move phase of round 6, move 1 battleship from 5 Sea Zone to attack 6 Sea Zone",
+          "expected_outcome": "Clear 6 Sea Zone of enemy ships, ensuring safe passage for transports",
+          "legal_action_required": "attack 6 Sea Zone with 1 battleship"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_14f591_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Frontlines",
+        "round": 4,
+        "text": "[Round 4][Noncombat Move][Mid][Southern Expansion] Japan did not adequately reinforce frontlines, leaving key territories vulnerable.",
+        "structured": {
+          "trigger": "Round 4, French Indo-China has 3 UK infantry defenders, Japan has 2 infantry in Kwangsi",
+          "mistake": "Round 4 Noncombat Move: failed to move additional infantry to Kwangsi, weakening defensive position",
+          "action": "In Noncombat Move phase of round 5, transport 2 infantry from Japan to Kwangsi via 6 Sea Zone",
+          "expected_outcome": "Strengthened defensive position in Kwangsi, preparing for future offensives",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to Kwangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_14f591_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Optimize Transport Routes",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan's transport routes were inefficient, delaying troop deployments.",
+        "structured": {
+          "trigger": "Round 5, Japan has 2 transports in 6 Sea Zone, 4 infantry in Japan, and 1 US destroyer in 19 Sea Zone",
+          "mistake": "Round 5 Noncombat Move: did not utilize 2 transports to full capacity, transporting only 2 infantry instead of 4, slowing reinforcement efforts",
+          "action": "In Noncombat Move phase of round 6, transport 4 infantry from Japan to 19 Sea Zone using 2 transports",
+          "expected_outcome": "Faster troop deployment to frontlines, enhancing offensive capabilities",
+          "legal_action_required": "transport 4 infantry from Japan to 19 Sea Zone using 2 transports"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "011d41c1",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 8.7,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_011d41_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Enhance Transport Capacity",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan successfully purchased 2 transports, 2 armour, and 2 artillery, aligning with the Southern Expansion strategy by enhancing transport capacity and land force strength.",
+        "structured": {
+          "trigger": "Round 4, Japan has 7 land units in Japan, 1 empty transport in 6 Sea Zone, and 36 Sea Zone is a target for expansion.",
+          "mistake": "Round 4 Purchase: No mistake in purchase, but insufficient artillery in Japan for planned noncombat move.",
+          "action": "In Purchase Units phase of round 5, buy 1 additional artillery to ensure sufficient units for transport loading.",
+          "expected_outcome": "Ensure full transport utilization, enabling effective land force projection to 36 Sea Zone.",
+          "legal_action_required": "buy 1 artillery"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_011d41_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture French Indo-China",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan failed to initiate an attack on French Indo-China due to insufficient forces in the staging area.",
+        "structured": {
+          "trigger": "Round 5, Jehol has 2 infantry, Kwangsi has 3 infantry and 1 artillery ready for the attack on French Indo-China.",
+          "mistake": "Round 5 Combat Move: Did not move enough infantry to Kwangsi in previous rounds, leaving French Indo-China attack unfeasible; only 2 infantry were moved instead of 3.",
+          "action": "In Combat Move phase of round 6, move 3 infantry and 1 artillery from Kwangsi to attack French Indo-China.",
+          "expected_outcome": "Capture French Indo-China (IPC +4), strengthen Southern Expansion foothold.",
+          "legal_action_required": "attack French Indo-China with 3 infantry and 1 artillery from Kwangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_011d41_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Staging Areas",
+        "round": 6,
+        "text": "[Round 6][Noncombat Move][Mid][Southern Expansion] Japan encountered issues with loading due to insufficient artillery and restrictions on moving units to battle zones during this phase.",
+        "structured": {
+          "trigger": "Round 6, Japan has 7 land units, 1 empty transport in 6 Sea Zone, and insufficient artillery in Japan for planned moves.",
+          "mistake": "Round 6 Noncombat Move: Attempted to load 1 infantry and 1 artillery onto transport in 6 Sea Zone, but lacked artillery in Japan.",
+          "action": "In Noncombat Move phase of round 7, move 1 infantry from 6 Sea Zone to Japan to ensure artillery is available for loading onto transports.",
+          "expected_outcome": "Efficiently transport forces to 36 Sea Zone, reinforcing Southern Expansion efforts.",
+          "legal_action_required": "transport 1 infantry from 6 Sea Zone to Japan"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_011d41_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Maximize Offensive Capability",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan effectively spent all 37 PUs to enhance transport capacity and strengthen land forces, aligning with the Southern Expansion strategy.",
+        "structured": {
+          "trigger": "Round 5, Japan has 37 PUs, 2 transports, 2 armour, 2 artillery, and 1 infantry purchased.",
+          "mistake": "Round 5 Purchase: No mistake in purchase, but future rounds require more infantry for sustained offensives.",
+          "action": "In Purchase Units phase of round 6, prioritize buying 3 infantry to support ongoing offensives.",
+          "expected_outcome": "Maintain pressure on Southern territories, ensuring continuous offensive capability.",
+          "legal_action_required": "buy 3 infantry"
+        },
+        "score": 8,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_011d41_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Key Territories",
+        "round": 6,
+        "text": "[Round 6][Combat Move][Mid][Southern Expansion] Japan did not secure key territories due to inadequate force allocation in prior rounds.",
+        "structured": {
+          "trigger": "Round 6, Kwangsi has insufficient forces to launch effective attacks on neighboring territories.",
+          "mistake": "Round 6 Combat Move: Failed to allocate enough forces to Kwangsi, limiting attack options.",
+          "action": "In Combat Move phase of round 7, ensure sufficient forces are positioned in Kwangsi for territorial expansion.",
+          "expected_outcome": "Capture neighboring territories, increasing IPC and strategic positioning.",
+          "legal_action_required": "attack neighboring territories from Kwangsi with sufficient forces"
+        },
+        "score": 8,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 2,
+          "actionability": 2,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_011d41_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Optimize Force Deployment",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan attempted to reposition fighters and tactical bombers from Manchuria to Kiangsu, but this action was not allowed in the noncombat move phase.",
+        "structured": {
+          "trigger": "Round 5, Manchuria has fighters and tactical bombers, Kiangsu is the intended repositioning target.",
+          "mistake": "Round 5 Noncombat Move: Attempted illegal repositioning of air units during noncombat move phase.",
+          "action": "In Noncombat Move phase of round 6, reposition air units legally to support ground operations.",
+          "expected_outcome": "Enhanced air support for ground operations, improving combat effectiveness.",
+          "legal_action_required": "reposition air units legally to support ground operations"
+        },
+        "score": 7,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 1,
+          "reproducibility": 1
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "3b47a986",
+    "result": "TIMEOUT - Capture Calcutta (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 9.8,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_3b47a9_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Land Forces",
+        "round": 4,
+        "text": "[Round 4][Purchase Units][Mid][Southern Expansion] Japan's purchase of 2 armour, 2 artillery, and 2 infantry was insufficient to maintain pressure on key territories in the Southern Expansion strategy.",
+        "structured": {
+          "trigger": "Round 4, Kwangtung has 3 UK infantry defenders, Japan has 4 infantry + 1 artillery in Kiangsi available",
+          "mistake": "Round 4 Purchase: bought 2 armour, 2 artillery, and 2 infantry instead of focusing on more infantry to sustain attacks on Kwangtung.",
+          "action": "In Purchase Units phase of round 5, buy 4 infantry and 1 artillery to strengthen land forces for Kwangtung attack.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), maintain pressure on Southern territories.",
+          "legal_action_required": "buy 4 infantry, 1 artillery"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_3b47a9_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Enhance Naval Transport",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan failed to purchase additional transports, limiting the ability to move reinforcements efficiently to the front lines.",
+        "structured": {
+          "trigger": "Round 5, Philippines has 2 US infantry defenders, Japan has 3 infantry + 1 artillery in Formosa available but lacks transport capacity.",
+          "mistake": "Round 5 Purchase: did not buy any transports, restricting movement of forces from Japan to the Philippines.",
+          "action": "In Purchase Units phase of round 6, buy 1 transport to increase mobility and support Southern Expansion.",
+          "expected_outcome": "Improved troop movement to Philippines, enabling stronger attacks and reinforcements.",
+          "legal_action_required": "buy 1 transport"
+        },
+        "score": 9,
+        "stars": "★★★★☆",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 2,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_3b47a9_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Kwangtung",
+        "round": 4,
+        "text": "[Round 4][Combat Move][Mid][Southern Expansion] Japan's attack on Kwangtung was underpowered, failing to capture the territory and losing momentum.",
+        "structured": {
+          "trigger": "Round 4, Kwangtung has 3 UK infantry defenders, Japan attacks with 4 infantry + 1 artillery from Kiangsi.",
+          "mistake": "Round 4 Combat Move: attacked Kwangtung with insufficient forces, resulting in failure to capture.",
+          "action": "In Combat Move phase of round 5, attack Kwangtung with 5 infantry and 2 artillery to ensure capture.",
+          "expected_outcome": "Capture Kwangtung (IPC +3), open route to French Indo-China next round.",
+          "legal_action_required": "attack Kwangtung with 5 infantry, 2 artillery from Kiangsi"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_3b47a9_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Philippines",
+        "round": 5,
+        "text": "[Round 5][Combat Move][Mid][Southern Expansion] Japan did not allocate enough forces to secure the Philippines, missing an opportunity to weaken US presence.",
+        "structured": {
+          "trigger": "Round 5, Philippines has 2 US infantry defenders, Japan has 3 infantry + 1 artillery in Formosa available.",
+          "mistake": "Round 5 Combat Move: failed to attack Philippines with available forces, allowing US to maintain control.",
+          "action": "In Combat Move phase of round 6, attack Philippines with 3 infantry and 1 artillery from Formosa.",
+          "expected_outcome": "Capture Philippines (IPC +3), reduce US influence in the region.",
+          "legal_action_required": "attack Philippines with 3 infantry, 1 artillery from Formosa"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_3b47a9_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Kwangtung",
+        "round": 4,
+        "text": "[Round 4][Noncombat Move][Mid][Southern Expansion] Japan did not move reinforcements to Kwangtung, leaving it vulnerable to counterattacks.",
+        "structured": {
+          "trigger": "Round 4, Kwangtung has 3 UK infantry defenders, Japan has 4 infantry + 1 artillery in Kiangsi available.",
+          "mistake": "Round 4 Noncombat Move: failed to move additional units to Kwangtung after combat, risking loss of territory.",
+          "action": "In Noncombat Move phase of round 5, transport 2 infantry from Japan to Kwangtung via 6 Sea Zone.",
+          "expected_outcome": "Strengthen Kwangtung defense, prevent UK counterattack.",
+          "legal_action_required": "transport 2 infantry from Japan via 6 Sea Zone to Kwangtung"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_3b47a9_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Enhance Mobility",
+        "round": 5,
+        "text": "[Round 5][Noncombat Move][Mid][Southern Expansion] Japan's failure to reposition naval units limited strategic flexibility and reinforcement options.",
+        "structured": {
+          "trigger": "Round 5, Sea Zone 6 has 1 transport, Japan needs to move 2 infantry from Sea Zone 6 to Sea Zone 19 to support Southern operations.",
+          "mistake": "Round 5 Noncombat Move: did not reposition 1 transport with 2 infantry to Sea Zone 19, limiting reinforcement options.",
+          "action": "In Noncombat Move phase of round 6, move 1 transport from Sea Zone 6 to Sea Zone 19 carrying 2 infantry to support troop movements.",
+          "expected_outcome": "Increased flexibility for troop deployment in Southern territories.",
+          "legal_action_required": "move 1 transport with 2 infantry from Sea Zone 6 to Sea Zone 19"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
+  },
+  {
+    "game_id": "d47e2155",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "game_stage": "Mid",
+    "strategic_goal": "Southern Expansion",
+    "avg_score": 10.0,
+    "rag_threshold": 5,
+    "lessons": [
+      {
+        "id": "exp_d47e21_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Kwangtung",
+        "round": 2,
+        "text": "[Round 2][Purchase Units][Early][Southern Expansion] Japan failed to purchase enough infantry to reinforce Kwangtung, leaving it vulnerable to counterattack.",
+        "structured": {
+          "trigger": "Round 2, Kwangtung has 2 UK infantry defenders, Japan has 3 infantry in Kiangsi available",
+          "mistake": "Round 2 Purchase: bought 1 infantry instead of 3, leaving Kwangtung under-defended",
+          "action": "In Purchase Units phase of round 2, buy 3 infantry to reinforce Kwangtung",
+          "expected_outcome": "Reinforce Kwangtung, maintain control (IPC +3)",
+          "legal_action_required": "buy 3 infantry"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_d47e21_6_purchase",
+        "game_phase": "Purchase Units",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Prepare for India Assault",
+        "round": 5,
+        "text": "[Round 5][Purchase Units][Mid][Southern Expansion] Japan did not purchase enough naval units to support an assault on India.",
+        "structured": {
+          "trigger": "Round 5, India has 4 UK infantry defenders, Japan has 2 battleships and 1 carrier in 37 Sea Zone",
+          "mistake": "Round 5 Purchase: bought 2 infantry instead of 1 carrier, limiting naval support for India assault",
+          "action": "In Purchase Units phase of round 5, buy 1 carrier to support naval operations near India",
+          "expected_outcome": "Strengthen naval presence near India, enabling future assault",
+          "legal_action_required": "buy 1 carrier"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_d47e21_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Capture Borneo",
+        "round": 3,
+        "text": "[Round 3][Combat Move][Early][Southern Expansion] Japan failed to capture Borneo due to insufficient forces.",
+        "structured": {
+          "trigger": "Round 3, Borneo has 1 UK infantry defender, Japan has 2 infantry in 35 Sea Zone",
+          "mistake": "Round 3 Combat Move: attacked Borneo with 1 infantry, failed to capture",
+          "action": "In Combat Move phase of round 3, attack Borneo with 2 infantry from 35 Sea Zone",
+          "expected_outcome": "Capture Borneo (IPC +4), secure additional resources",
+          "legal_action_required": "attack Borneo with 2 infantry from 35 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_d47e21_6_combat",
+        "game_phase": "Combat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Secure Malaya",
+        "round": 6,
+        "text": "[Round 6][Combat Move][Mid][Southern Expansion] Japan did not allocate enough forces to secure Malaya, allowing UK to maintain control.",
+        "structured": {
+          "trigger": "Round 6, Malaya has 3 UK infantry defenders, Japan has 2 infantry and 1 artillery in 37 Sea Zone",
+          "mistake": "Round 6 Combat Move: attacked Malaya with 2 infantry, failed to secure",
+          "action": "In Combat Move phase of round 6, attack Malaya with 2 infantry and 1 artillery from 37 Sea Zone",
+          "expected_outcome": "Capture Malaya (IPC +3), weaken UK position",
+          "legal_action_required": "attack Malaya with 2 infantry and 1 artillery from 37 Sea Zone"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_d47e21_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Early",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reposition for Philippines Defense",
+        "round": 1,
+        "text": "[Round 1][Noncombat Move][Early][Southern Expansion] Japan did not reposition forces effectively to defend the Philippines.",
+        "structured": {
+          "trigger": "Round 1, Philippines has 1 US infantry defender, Japan has 2 infantry in Japan",
+          "mistake": "Round 1 Noncombat Move: failed to transport 2 infantry to Philippines, leaving it vulnerable",
+          "action": "In Noncombat Move phase of round 1, transport 2 infantry from Japan to Philippines",
+          "expected_outcome": "Strengthen defense of Philippines, prevent US capture",
+          "legal_action_required": "transport 2 infantry from Japan to Philippines"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      },
+      {
+        "id": "exp_d47e21_6_ncm",
+        "game_phase": "Noncombat Move",
+        "game_stage": "Mid",
+        "strategic_goal": "Southern Expansion",
+        "tactical_goal": "Reinforce Java",
+        "round": 4,
+        "text": "[Round 4][Noncombat Move][Mid][Southern Expansion] Japan did not reinforce Java, risking loss of control.",
+        "structured": {
+          "trigger": "Round 4, Java has 1 UK infantry defender, Japan has 1 infantry in 36 Sea Zone",
+          "mistake": "Round 4 Noncombat Move: failed to transport 1 infantry to Java, risking UK counterattack",
+          "action": "In Noncombat Move phase of round 4, transport 1 infantry from 36 Sea Zone to Java",
+          "expected_outcome": "Reinforce Java, maintain control (IPC +4)",
+          "legal_action_required": "transport 1 infantry from 36 Sea Zone to Java"
+        },
+        "score": 10,
+        "stars": "★★★★★",
+        "score_details": {
+          "format": 2,
+          "specificity": 3,
+          "actionability": 3,
+          "reproducibility": 2
+        },
+        "in_rag": true
+      }
+    ]
   }
-
-
 ]
