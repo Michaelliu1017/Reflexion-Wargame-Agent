@@ -336,6 +336,109 @@ def _fmt_units(units: dict) -> str:
     return " ".join(parts) if parts else "(empty)"
 
 
+class _StateCache:
+    """
+    Caches the last game state snapshot (territory → units mapping).
+    On second+ call, returns only the diff instead of the full state.
+    Reset at the start of each phase to guarantee a fresh full state.
+    """
+
+    def __init__(self):
+        self._prev_jp: dict[str, dict] = {}
+        self._prev_enemy: dict[str, dict] = {}
+        self._prev_pus: int | str = "?"
+        self._has_prev = False
+
+    def reset(self) -> None:
+        self._prev_jp = {}
+        self._prev_enemy = {}
+        self._prev_pus = "?"
+        self._has_prev = False
+
+    def get_state_text(self, state: dict) -> str:
+        if not self._has_prev:
+            self._snapshot(state)
+            self._has_prev = True
+            return _compress_state_for_llm(state)
+
+        new_jp, new_enemy, new_pus = self._extract(state)
+        diff_lines = self._diff(new_jp, new_enemy, new_pus)
+        self._prev_jp = new_jp
+        self._prev_enemy = new_enemy
+        self._prev_pus = new_pus
+
+        if not diff_lines:
+            return "[State Update] No changes since last check."
+
+        header = f"[State Update — {len(diff_lines)} change(s) since last check]"
+        return header + "\n" + "\n".join(diff_lines)
+
+    def _snapshot(self, state: dict) -> None:
+        self._prev_jp, self._prev_enemy, self._prev_pus = self._extract(state)
+
+    @staticmethod
+    def _extract(state: dict) -> tuple[dict[str, dict], dict[str, dict], int | str]:
+        units_by_terr = state.get("unitsByTerritory", {})
+        jp_pus = state.get("japan", {}).get("pus", "?")
+
+        jp_map: dict[str, dict] = {}
+        enemy_map: dict[str, dict] = {}
+
+        for t in state.get("territories", []):
+            name = t.get("name", "")
+            owner = t.get("owner", "") or ""
+            is_water = t.get("isWater", False)
+            is_jp = owner in ("Japanese", "Japan")
+
+            jp_units = {k: v for k, v in units_by_terr.get(name, {}).items()
+                        if v > 0 and k not in _INFRA_KEYS}
+            all_units = {k: v for k, v in t.get("unitsSummary", {}).items()
+                         if v > 0 and k not in _INFRA_KEYS}
+
+            if is_jp and (jp_units or not is_water):
+                jp_map[name] = jp_units
+            elif owner and owner not in ("Neutral", "") and all_units and not is_water:
+                enemy_map[name] = all_units
+
+        return jp_map, enemy_map, jp_pus
+
+    def _diff(
+        self,
+        new_jp: dict[str, dict],
+        new_enemy: dict[str, dict],
+        new_pus: int | str,
+    ) -> list[str]:
+        lines: list[str] = []
+
+        if str(new_pus) != str(self._prev_pus):
+            lines.append(f"  △ Japan PUs: {self._prev_pus} → {new_pus}")
+
+        lines.extend(self._diff_territory_group(self._prev_jp, new_jp, "JP"))
+        lines.extend(self._diff_territory_group(self._prev_enemy, new_enemy, "Enemy"))
+        return lines
+
+    @staticmethod
+    def _diff_territory_group(
+        old: dict[str, dict],
+        new: dict[str, dict],
+        label: str,
+    ) -> list[str]:
+        lines: list[str] = []
+        all_names = sorted(set(old) | set(new))
+        for name in all_names:
+            old_units = old.get(name, {})
+            new_units = new.get(name, {})
+            if old_units == new_units:
+                continue
+            old_str = _fmt_units(old_units) if old_units else "(empty)"
+            new_str = _fmt_units(new_units) if new_units else "(empty)"
+            lines.append(f"  △ [{label}] {name}: {old_str} → {new_str}")
+        return lines
+
+
+_state_cache = _StateCache()
+
+
 def _compress_state_for_llm(state: dict) -> str:
     """
     Compress full game state JSON to a structured text summary.
@@ -550,9 +653,10 @@ def tool_get_state() -> str:
     Get current game state summary.
     Includes: round/phase, Japan PUs, all territory owners and units, purchasable/placeable units.
     Always call this first before making any decision.
+    First call each phase returns full state; subsequent calls return only changes.
     """
     state = _client.get_state()
-    return _compress_state_for_llm(state)
+    return _state_cache.get_state_text(state)
 
 
 @tool
@@ -1533,6 +1637,7 @@ def run_full_turn(
         # Update handler phase (controls output color) and reset move tracking
         handler.current_phase = step_name
         handler.reset_phase_tracking()
+        _state_cache.reset()
 
         # ── Phase banner (display.py) ─────────────────────────────
         _pnum  = _PHASE_NUMBER.get(step_name, 0)
