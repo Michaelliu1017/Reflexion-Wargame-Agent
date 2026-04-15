@@ -34,9 +34,9 @@ from pydantic import BaseModel, Field
 load_dotenv()
 
 
-# ─────────────────────────────────────────────────────────────
-# 常量
-# ─────────────────────────────────────────────────────────────
+# ***************************************************************
+# constant
+# ***************************************************************
 
 VALID_PHASES = ("Purchase Units", "Combat Move", "Noncombat Move")
 VALID_STAGES = ("Early", "Mid", "Late")
@@ -168,32 +168,46 @@ class CriticVerdict(BaseModel):
     )
 
 
-# ─────────────────────────────────────────────────────────────
+# ***************************************************************
 # GameMemory
-# ─────────────────────────────────────────────────────────────
+# ***************************************************************
 
 class GameMemory:
-
+    # 1) initialize memory
     def __init__(
         self,
         rules_path: str = "./knowledge/rules.txt",
-        index_path: str = "./knowledge/faiss_index",
+        rules_index_path: str = "./knowledge/faiss_index",
+        exp_index_path: str = "./knowledge/exp_index",
     ):
         self.embeddings = OpenAIEmbeddings()
-        self.index_path = index_path
+        self.rules_index_path = rules_index_path
+        self.exp_index_path = exp_index_path
 
-        if os.path.exists(index_path):
-            print(f"[Memory] Loading existing vector store: {index_path}")
-            self.vectorstore = FAISS.load_local(
-                index_path,
+        if os.path.exists(rules_index_path):
+            print(f"[Memory] Loading rules vector store: {rules_index_path}")
+            self.rules_store = FAISS.load_local(
+                rules_index_path,
                 self.embeddings,
                 allow_dangerous_deserialization=True,
             )
         else:
-            print(f"[Memory] Building vector store from rules: {rules_path}")
-            self.vectorstore = self._build_from_rules(rules_path)
-            self.vectorstore.save_local(index_path)
-            print(f"[Memory] Vector store saved: {index_path}")
+            print(f"[Memory]  Building rules vector store from: {rules_path}")
+            self.rules_store = self._build_from_rules(rules_path)
+            self.rules_store.save_local(rules_index_path)
+            print(f"[Memory] Rules vector store saved: {rules_index_path}")
+
+        if os.path.exists(exp_index_path):
+            print(f"[Memory] Loading experience vector store: {exp_index_path}")
+            self.exp_store= FAISS.load_local(
+                exp_index_path,
+                self.embeddings,
+                allow_dangerous_deserialization=True,
+            )
+        else:
+            print(f"[Memory] No experience vector store")
+            self.exp_store = None
+
 
     def _build_from_rules(self, rules_path: str) -> FAISS:
         with open(rules_path, "r", encoding="utf-8") as f:
@@ -206,16 +220,21 @@ class GameMemory:
         print(f"[Memory] Rules text split into {len(chunks)} chunks, vectorizing...")
         return FAISS.from_documents(chunks, self.embeddings)
 
+    # 2) retrieve memory
     def retrieve(self, query: str, k: int = 3) -> str:
         """
-        Semantic retrieval. Returns empty string if Embedding API is unavailable (no crash).
-        Query format examples:
-          "[Purchase Units][Early][Southern Expansion] round 3"
-          "[Combat Move][Mid][Southern Expansion] round 5"
+        Search both stores separately, then combine results.
+        Experience results come first, then are rules. (version 2)
         """
+        results=[]
         try:
-            docs = self.vectorstore.similarity_search(query, k=k)
-            return "\n\n---\n\n".join([d.page_content for d in docs])
+            if self.exp_store is not None:
+                exp_doc = self.exp_store.similarity_search(query, k=k)
+                results.extend(exp_doc)
+
+            rules_docs = self.rules_store.similarity_search(query, k=2)
+            results.extend(rules_docs)
+
         except Exception as e:
             err = str(e)
             if "insufficient_quota" in err:
@@ -228,6 +247,10 @@ class GameMemory:
             else:
                 print(f"  [RAG] ⚠ Retrieval failed ({type(e).__name__}) — skipping.")
             return ""
+        if not results:
+            return ""
+        return "\n\n---\n\n".join([d.page_content for d in results])
+
 
     def add_experience(self, text: str, metadata: dict | None = None):
         """Add a high-quality experience entry to FAISS."""
@@ -235,13 +258,16 @@ class GameMemory:
             page_content=text,
             metadata={**(metadata or {}), "source": "reflexion"},
         )
-        self.vectorstore.add_documents([doc])
-        self.vectorstore.save_local(self.index_path)
+        if self.exp_store is None:
+            self.exp_store=FAISS.from_documents([doc], self.embeddings)
+        else:
+            self.exp_store.add_documents([doc])
+        self.exp_store.save_local(self.exp_index_path)
 
 
-# ─────────────────────────────────────────────────────────────
-# ReflexionEngine
-# ─────────────────────────────────────────────────────────────
+# ***************************************************************
+# ReflexionEngine (以下是reflexion相关代码，等待修改 4.14)
+# ***************************************************************
 
 class ReflexionEngine:
 
@@ -410,8 +436,9 @@ Rules:
 10. "round" field is the game round the lesson primarily references (1 to {round_num})
 """
 
-    # ── 批评者审核 ────────────────────────────────────────────
-
+    #**************************************************************
+    # Criticizer Model
+    #**************************************************************
     def _critique(
         self,
         lesson: ReflexionLesson,

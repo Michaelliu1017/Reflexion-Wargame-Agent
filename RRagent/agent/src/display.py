@@ -3,6 +3,7 @@ display.py — Terminal output helpers for the Japan agent.
 
 Standalone module; no imports from agent.py or any project file.
 All color output degrades gracefully when stdout is not a TTY.
+[Do not need to know]
 """
 from __future__ import annotations
 

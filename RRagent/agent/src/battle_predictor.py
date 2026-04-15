@@ -1,7 +1,7 @@
 """
 battle_predictor.py
 
-蒙特卡洛战斗仿真器（第5版）：
+战斗仿真器（第5版）：
   - 并行模拟 B 局战斗，精确估算攻方胜率
   - 精度远高于神经网络近似，B=1000 时标准误差约 ±1.5%，运行时间约 0.02s
   - 接口与原 ML 版本完全一致，可直接替换
@@ -10,7 +10,9 @@ battle_predictor.py
   infantry, mech_infantry, artillery, armour/tank,
   fighter, tactical_bomber, strategic_bomber/bomber
   守方额外：aa_gun / aaGun
+  [Do Not Need to Know]
 """
+
 from __future__ import annotations
 
 import numpy as np

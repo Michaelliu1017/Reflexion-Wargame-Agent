@@ -64,13 +64,13 @@ def _owns(state: dict, territory: str) -> bool:
 
 MILESTONES = [
     {
-        "id": "capture_india",
-        "name": "Capture Calcutta (Early Game Victory)",
+        "id": "m1",
+        "name": "Capture India (Early Game Victory)",
         "check": lambda state: _owns(state, "India"),
         "max_rounds": 6,
     },
     {
-        "id": "secure_sea_lanes",
+        "id": "m2",
         "name": "Secure Southeast Asia Resource Zone",
         "check": lambda state: all(
             _owns(state, t)
@@ -79,8 +79,8 @@ MILESTONES = [
         "max_rounds": 5,
     },
     {
-        "id": "destroy_us_navy",
-        "name": "Destroy Pearl Harbor Fleet",
+        "id": "m3",
+        "name": "Destroy US Navy",
         "check": lambda state: _us_fleet_destroyed(state),
         "max_rounds": 4,
     },
@@ -118,13 +118,13 @@ def check_milestone(state: dict, milestone: dict) -> bool:
 # ─────────────────────────────────────────────────────────────
 
 _MILESTONE_GOALS: dict[str, str] = {
-    "capture_india":    "Southern Expansion",
-    "secure_sea_lanes": "Southern Expansion",
-    "destroy_us_navy":  "Pacific Dominance",
+    "m1": "Southern Expansion",
+    "m2": "Southern Expansion",
+    "m3": "Pacific Dominance",
 }
 
 
-def run_game(milestone_id: str = "capture_india"):
+def run_game(milestone_id: str = "m1"):
     """
     Run the game loop for a single milestone objective.
 
@@ -143,7 +143,8 @@ def run_game(milestone_id: str = "capture_india"):
     # Set up memory and reflexion
     memory = GameMemory(
         rules_path=os.path.join(PROJECT_ROOT, "knowledge", "rules.txt"),
-        index_path=os.path.join(PROJECT_ROOT, "knowledge", "faiss_index"),
+        rules_index_path=os.path.join(PROJECT_ROOT, "knowledge", "rules_index"),
+        exp_index_path=os.path.join(PROJECT_ROOT, "knowledge", "exp_index"),
     )
     reflexion = ReflexionEngine(
         memory,
@@ -266,12 +267,16 @@ if __name__ == "__main__":
 
     # ── Argument parsing ───────────────────────────────────────
     parser = argparse.ArgumentParser(description="TripleA LLM Agent")
-    parser.add_argument(
-        "--milestone",
-        choices=[m["id"] for m in MILESTONES],
-        default="capture_india",
-        help="Which milestone objective to pursue",
-    )
+    parser.add_argument("--m1", action="store_true", help="Capture India (Early Game Victory)")
+    parser.add_argument("--m2", action="store_true", help="Secure Southeast Asia Resource Zone")
+    parser.add_argument("--m3", action="store_true", help="Destroy US Navy")
     args = parser.parse_args()
 
-    run_game(milestone_id=args.milestone)
+    if args.m2:
+        milestone_id = "m2"
+    elif args.m3:
+        milestone_id = "m3"
+    else:
+        milestone_id = "m1"   # default
+
+    run_game(milestone_id=milestone_id)
