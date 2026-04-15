@@ -177,13 +177,15 @@ class GameMemory:
     def __init__(
         self,
         rules_path: str = "./knowledge/rules.txt",
-        rules_index_path: str = "./knowledge/faiss_index",
+        rules_index_path: str = "./knowledge/rules_index",
         exp_index_path: str = "./knowledge/exp_index",
+        experiences_json_path: Optional[str] = None,
     ):
         self.embeddings = OpenAIEmbeddings()
         self.rules_index_path = rules_index_path
         self.exp_index_path = exp_index_path
 
+        # ── Rules vector store (read-only after first build) ──
         if os.path.exists(rules_index_path):
             print(f"[Memory] Loading rules vector store: {rules_index_path}")
             self.rules_store = FAISS.load_local(
@@ -192,21 +194,62 @@ class GameMemory:
                 allow_dangerous_deserialization=True,
             )
         else:
-            print(f"[Memory]  Building rules vector store from: {rules_path}")
+            print(f"[Memory] Building rules vector store from: {rules_path}")
             self.rules_store = self._build_from_rules(rules_path)
             self.rules_store.save_local(rules_index_path)
             print(f"[Memory] Rules vector store saved: {rules_index_path}")
 
+        # ── Experience vector store ──
         if os.path.exists(exp_index_path):
             print(f"[Memory] Loading experience vector store: {exp_index_path}")
-            self.exp_store= FAISS.load_local(
+            self.exp_store = FAISS.load_local(
                 exp_index_path,
                 self.embeddings,
                 allow_dangerous_deserialization=True,
             )
         else:
-            print(f"[Memory] No experience vector store")
             self.exp_store = None
+            # Try to seed from experiences.json if it exists
+            if experiences_json_path and os.path.exists(experiences_json_path):
+                self._seed_from_json(experiences_json_path)
+            else:
+                print(f"[Memory] No experience vector store (will create on first Reflexion)")
+
+    def _seed_from_json(self, json_path: str) -> None:
+        """One-time import: load all in_rag lessons from experiences.json into exp_store."""
+        try:
+            with open(json_path, "r", encoding="utf-8") as f:
+                data = json.loads(f.read().strip() or "[]")
+        except (json.JSONDecodeError, FileNotFoundError):
+            print(f"[Memory] Could not read {json_path} — skipping seed")
+            return
+
+        docs = []
+        for game in data:
+            for lesson in game.get("lessons", []):
+                if not lesson.get("in_rag", False):
+                    continue
+                text = lesson.get("text", "")
+                if not text.strip():
+                    continue
+                docs.append(Document(
+                    page_content=text,
+                    metadata={
+                        "source": "reflexion",
+                        "game_phase": lesson.get("game_phase", ""),
+                        "game_stage": lesson.get("game_stage", ""),
+                        "strategic_goal": lesson.get("strategic_goal", ""),
+                        "round": lesson.get("round", 0),
+                    },
+                ))
+
+        if docs:
+            print(f"[Memory] Seeding exp vector store from {json_path}: {len(docs)} lessons (in_rag=true)")
+            self.exp_store = FAISS.from_documents(docs, self.embeddings)
+            self.exp_store.save_local(self.exp_index_path)
+            print(f"[Memory] Experience vector store created and saved: {self.exp_index_path}")
+        else:
+            print(f"[Memory] No in_rag lessons found in {json_path}")
 
 
     def _build_from_rules(self, rules_path: str) -> FAISS:

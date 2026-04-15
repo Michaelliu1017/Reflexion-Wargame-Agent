@@ -141,10 +141,12 @@ def run_game(milestone_id: str = "m1"):
     print(f"{'=' * 60}\n")
 
     # Set up memory and reflexion
+    exp_json = os.path.join(PROJECT_ROOT, "memory", "experiences.json")
     memory = GameMemory(
         rules_path=os.path.join(PROJECT_ROOT, "knowledge", "rules.txt"),
         rules_index_path=os.path.join(PROJECT_ROOT, "knowledge", "rules_index"),
         exp_index_path=os.path.join(PROJECT_ROOT, "knowledge", "exp_index"),
+        experiences_json_path=exp_json,
     )
     reflexion = ReflexionEngine(
         memory,
