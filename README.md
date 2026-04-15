@@ -79,7 +79,7 @@ pip install -r requirements.txt
 
 # Start agent
 cd /LangChain_RAG_WargameBot/RRagent/agent/src
-python main.py --milestone capture_india
+python main.py --m1
 ```
 <img src="assets/ingame.png" width="600" alt="demo">
 
@@ -94,9 +94,9 @@ The agent will now play automatically whenever it is Japan's turn.
 
 | Milestone | Description | Max Rounds |
 |---|---|---|
-| `capture_india` | Capture Calcutta | 6 |
-| `secure_sea_lanes` | Control Sumatra, Java, Borneo, Celebes | 5 |
-| `destroy_us_navy` | Eliminate US fleet at Hawaiian Islands | 4 |
+| `m1` | Capture Calcutta | 6 |
+| `m2` | Control Sumatra, Java, Borneo, Celebes | 5 |
+| `m3` | Eliminate US Navy | 4 |
 ```bash
 python main.py --milestone secure_sea_lanes
 python main.py --milestone destroy_us_navy
