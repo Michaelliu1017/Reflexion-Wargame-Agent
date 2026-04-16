@@ -1,10 +1,11 @@
 """
 main.py
 
-Main game loop.
-- Each round runs the agent for Japan's full turn
-- After each round, checks if milestone was reached
-- On milestone reached (or timeout), triggers Reflexion and exits
+Main game loop with Strategic Plan lifecycle:
+- Game start: load National Strategy → initialize Strategic Plans
+- Each round: generate Round Plan (referencing plans) → execute phases → track progress
+- Every 2 rounds: strategic reassessment (may add/modify/abandon plans)
+- Game end: reflexion evaluates each plan → updates National Strategy
 """
 import os
 import time
@@ -13,9 +14,15 @@ from pyBanner import banner, info, effect
 
 os.environ["KMP_DUPLICATE_LIB_OK"] = "TRUE"
 
-from agent import run_full_turn, _summarize_round, _reassess_strategy, LLM_MODEL
+from agent import (
+    run_full_turn, _summarize_round, _reassess_strategy,
+    _initialize_strategic_plans, LLM_MODEL,
+)
 from bridge_client import TripleABridgeClient
-from memory import GameMemory, ReflexionEngine
+from memory import (
+    GameMemory, ReflexionEngine, StrategicPlan,
+    load_national_strategy,
+)
 
 
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -117,31 +124,26 @@ def check_milestone(state: dict, milestone: dict) -> bool:
 # 主游戏循环
 # ─────────────────────────────────────────────────────────────
 
-_MILESTONE_GOALS: dict[str, str] = {
-    "m1": "Southern Expansion",
-    "m2": "Southern Expansion",
-    "m3": "Pacific Dominance",
-}
-
-
 def run_game(milestone_id: str = "m1"):
     """
-    Run the game loop for a single milestone objective.
-
-    Args:
-        milestone_id: which milestone to pursue (see MILESTONES above)
+    Run the game loop with Strategic Plan lifecycle:
+    1. Load National Strategy → initialize plans
+    2. Each round: RAG retrieve → Round Plan → execute → track progress
+    3. Every 2 rounds: reassess plans
+    4. Game end: reflexion per plan → update NS
     """
-    # Find the requested milestone
     milestone = next((m for m in MILESTONES if m["id"] == milestone_id), MILESTONES[0])
-    strategic_goal = _MILESTONE_GOALS.get(milestone_id, "Southern Expansion")
     print(f"\n{'=' * 60}")
-    print(f"  Objective:      {milestone['name']}")
-    print(f"  Strategic Goal: {strategic_goal}")
-    print(f"  Max rounds:     {milestone['max_rounds']}")
+    print(f"  Objective:  {milestone['name']}")
+    print(f"  Max rounds: {milestone['max_rounds']}")
     print(f"{'=' * 60}\n")
 
-    # Set up memory and reflexion
+    # ── Set up memory, NS, and reflexion ──
+    ns_path = os.path.join(PROJECT_ROOT, "knowledge", "national_strategy.json")
     exp_json = os.path.join(PROJECT_ROOT, "memory", "experiences.json")
+
+    ns = load_national_strategy(ns_path)
+
     memory = GameMemory(
         rules_path=os.path.join(PROJECT_ROOT, "knowledge", "rules.txt"),
         rules_index_path=os.path.join(PROJECT_ROOT, "knowledge", "rules_index"),
@@ -150,27 +152,21 @@ def run_game(milestone_id: str = "m1"):
     )
     reflexion = ReflexionEngine(
         memory,
-        experiences_path=os.path.join(PROJECT_ROOT, "memory", "experiences.json"),
+        experiences_path=exp_json,
+        ns_path=ns_path,
         reflect_model=LLM_MODEL,
-        critic_model="gpt-4o-mini",
     )
 
     game_id = str(uuid.uuid4())[:8]
-    game_log = []
+    game_log: list[str] = []
     round_summaries: list[str] = []
+    plan_tracker: list[StrategicPlan] = []
+    plans_initialized = False
     current_round = 0
 
     while current_round < milestone["max_rounds"]:
         current_round += 1
         print(f"\n[Round {current_round} / {milestone['max_rounds']}]")
-
-        # ── Layer 3: Strategic Reassessment every 2 rounds (starting round 2) ──
-        if current_round >= 2 and current_round % 2 == 0:
-            strategic_goal = _reassess_strategy(
-                round_num=current_round,
-                current_goal=strategic_goal,
-                round_summaries=round_summaries,
-            )
 
         # Wait for our turn
         print("  Waiting for Japanese turn (Bridge must be running)...")
@@ -184,28 +180,52 @@ def run_game(milestone_id: str = "m1"):
         current_phase = _client.get_phase()
         print(f"  Japanese turn detected! Starting at phase: {current_phase}")
 
-        stage = "Early" if current_round <= 3 else ("Mid" if current_round <= 6 else "Late")
-        rag_context = memory.retrieve(
-            f"[{stage}][{strategic_goal}] Japan round {current_round} strategy",
-            k=2,
-        )
+        # ── Initialize Strategic Plans (once, before round 1) ──
+        if not plans_initialized:
+            plan_tracker = _initialize_strategic_plans(ns, round_num=current_round)
+            plans_initialized = True
 
-        # Run full Japanese turn (with cross-round memory)
+        # ── Layer 3: Strategic Reassessment every 2 rounds ──
+        if current_round >= 2 and current_round % 2 == 0:
+            plan_tracker = _reassess_strategy(
+                round_num=current_round,
+                plan_tracker=plan_tracker,
+                round_summaries=round_summaries,
+            )
+
+        # ── RAG retrieval: query by highest-priority active plan ──
+        active_plans = [p for p in plan_tracker if p.status == "active"]
+        active_plans.sort(key=lambda p: p.target_round)
+        stage = "Early" if current_round <= 3 else ("Mid" if current_round <= 6 else "Late")
+        if active_plans:
+            top = active_plans[0]
+            rag_query = f"Japan {stage} game: how to {top.name}"
+        else:
+            rag_query = f"Japan {stage} game round {current_round} strategy"
+        try:
+            rag_context = memory.retrieve(rag_query, k=3)
+        except Exception:
+            rag_context = ""
+
+        # ── Run full turn ──
         turn_log = run_full_turn(
             rag_context=rag_context,
             start_phase=current_phase,
-            memory=memory,
             round_num=current_round,
-            strategic_goal=strategic_goal,
+            plan_tracker=plan_tracker,
             prev_round_summaries=round_summaries,
         )
         game_log.extend(turn_log)
 
-        # ── Cross-round memory: summarize this round for future rounds ──
+        # ── Round summary + plan progress tracking ──
         summary = _summarize_round(current_round, turn_log)
         round_summaries.append(summary)
 
-        # Safety check: if our turn didn't fully complete (rare race condition).
+        for p in plan_tracker:
+            if p.status == "active":
+                p.progress.append(f"Round {current_round}: {summary}")
+
+        # ── Safety check: retry if turn didn't fully complete ──
         for _retry in range(3):
             time.sleep(3)
             try:
@@ -223,15 +243,15 @@ def run_game(milestone_id: str = "m1"):
                 extra_log = run_full_turn(
                     rag_context=rag_context,
                     start_phase=remaining,
-                    memory=memory,
                     round_num=current_round,
-                    strategic_goal=strategic_goal,
+                    plan_tracker=plan_tracker,
                     prev_round_summaries=round_summaries,
                 )
                 game_log.extend(extra_log)
             except Exception:
                 break
 
+        # ── Milestone check ──
         state = _get_state_with_retry(max_wait_seconds=300)
         if state is None:
             print("  [Warning] Could not get post-turn state (Bridge timeout) — skipping milestone check")
@@ -239,27 +259,35 @@ def run_game(milestone_id: str = "m1"):
         if check_milestone(state, milestone):
             print(f"\n  Milestone REACHED: {milestone['name']}")
             result = f"SUCCESS - {milestone['name']}"
+            # Mark relevant plans as completed
+            for p in plan_tracker:
+                if p.status == "active":
+                    p.status = "completed"
+                    p.progress.append(f"Round {current_round}: MILESTONE ACHIEVED")
             break
     else:
         print(f"\n  Max rounds reached without achieving milestone.")
         result = f"TIMEOUT - {milestone['name']} not achieved in {milestone['max_rounds']} rounds"
 
-    # Post-game Reflexion
-    print(f"\n  Running Reflexion for game {game_id} (round {current_round})...")
-    lessons = reflexion.reflect_and_store(
-        game_id, game_log, result,
+    # ── Post-game Strategic Reflexion ──
+    print(f"\n  Running Strategic Reflexion for game {game_id} (round {current_round})...")
+    reviews = reflexion.reflect_and_store(
+        game_id=game_id,
+        game_log=game_log,
+        result=result,
         round_num=current_round,
-        strategic_goal=strategic_goal,
+        plan_tracker=plan_tracker,
     )
 
     print(f"\n{'=' * 60}")
     print(f"  Game {game_id} ended: {result}")
-    print(f"  Lessons learned: {len(lessons)}")
-    for i, lesson in enumerate(lessons, 1):
-        print(f"  {i}. {lesson}")
+    print(f"  Plans reviewed: {len(reviews)}")
+    for i, review in enumerate(reviews, 1):
+        status = "ACHIEVED" if review.achieved else "FAILED"
+        print(f"  {i}. [{status}] {review.plan_name}: {review.lesson[:80]}")
     print(f"{'=' * 60}\n")
 
-    return result, lessons
+    return result, reviews
 
 
 # ─────────────────────────────────────────────────────────────

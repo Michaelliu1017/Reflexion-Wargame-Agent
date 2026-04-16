@@ -137,7 +137,9 @@ Submarine:
 
 Transport:
   Cost: 7 IPC | Attack: 0 | Defense: 0 | Move: 2
-  Carries up to 2 land units (max 1 heavy unit like armor).
+  Carries 1 heavy unit + 1 light unit (or 2 light units). Max 1 heavy per transport.
+  Heavy: armour, artillery, mech_infantry. Light: infantry.
+  Best combo: 1 armour + 1 infantry (max combat value per transport).
   Defenseless — must be escorted by combat ships.
   Critical for amphibious operations.
 
@@ -246,30 +248,7 @@ Solomon Islands:
   Island chain. Part of national objective island group (+5 IPC).
 
 
-=== EARLY GAME STRATEGY GUIDE ===
-
-Round 1 Priorities (before US enters war):
-  1. Purchase transports and infantry for amphibious operations.
-  2. Declare war on UK to open Southeast Asia campaign (accept that US entry accelerates).
-     OR stay neutral to collect +10 IPC bonus for 1-2 more rounds.
-  3. Attack Philippines, Dutch East Indies, and push into Burma.
-
-Economic targets:
-  - Secure Dutch East Indies (+5 IPC national objective) within first 3 rounds.
-  - Cut Burma Road to starve China.
-  - Do NOT overextend into Australia — it is too far and US pressure will mount.
-
-Navy considerations:
-  - Maintain naval superiority in the South Pacific sea lanes.
-  - Keep at least 1 destroyer per fleet to protect against enemy submarines.
-  - Carriers + fighters provide air cover for amphibious operations.
-
-Calcutta (India) approach:
-  - Advance through Burma (French Indochina → Burma → India).
-  - Requires 2-3 rounds of land advance with infantry + artillery.
-  - Shore bombardment + amphibious assault from Bay of Bengal is an alternative.
-  - Capturing Calcutta eliminates UK Pacific operations and grants +5 IPC national objective.
-
-Defending Japan:
-  - Always keep fighters and at least 2 infantry on Japan itself.
-  - Monitor US fleet buildup — do not let US carriers approach Japan unopposed.
+=== STRATEGY ===
+Japan's strategy is driven by the national_strategy.json file, which contains persistent
+doctrine, active strategic plans, and risk/mitigation mappings that evolve across games.
+Refer to the Round Plan and active Strategic Plans for current-game guidance.

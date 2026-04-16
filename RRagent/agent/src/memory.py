@@ -1,21 +1,20 @@
 """
 memory.py
 
-Two classes:
-  GameMemory      — RAG knowledge base for rules text and game experience, supports semantic retrieval
-  ReflexionEngine — Post-game LLM reflection, extracts strategic lessons and stores them
+Three components:
+  GameMemory        — RAG knowledge base (rules + experience), hybrid BM25 + FAISS retrieval
+  NationalStrategy  — Persistent cross-game strategy document (load/save JSON)
+  ReflexionEngine   — Post-game LLM reflection on Strategic Plans, updates NS
 
-RAG Retrieval Design:
-  Only retrieves for 3 action phases: Purchase Units / Combat Move / Noncombat Move
-  Query format matches stored text prefix exactly:
-    "[Purchase Units][Early][Southern Expansion] round 3"
-  Storage text format:
-    "[Round 3][Purchase Units][Early][Southern Expansion] lesson..."
+Strategic Plan Lifecycle:
+  1. Game start  → _initialize_strategic_plans() creates plans from NS + board state
+  2. Every round → Round Plan references active plans; Plan Tracker records progress
+  3. Every 2 rds → _reassess_strategy() may add/modify/abandon plans
+  4. Game end    → ReflexionEngine evaluates each plan → updates NS + stores experience
 
-Reflection Pipeline (3-layer quality assurance):
-  1. Structured generation — JSON Schema enforced format, 3 action-phase lessons per game
-  2. Critic review — second LLM call with same API key, rewrites low-quality lessons
-  3. Tiered storage — score ≥ 5 goes into FAISS (RAG retrievable) + JSON; all others JSON only
+RAG Retrieval:
+  Happens once at Round Plan generation (not per-phase).
+  Query: strategic plan names + current game stage.
 """
 from __future__ import annotations
 
@@ -36,7 +35,7 @@ load_dotenv()
 
 
 # ***************************************************************
-# constant
+# Constants
 # ***************************************************************
 
 VALID_PHASES = ("Purchase Units", "Combat Move", "Noncombat Move")
@@ -56,149 +55,146 @@ _UNIT_HINTS = [
 ]
 
 
-class ReflexionLesson(BaseModel):
-    """
-    A single game-phase-level strategic lesson.
-    text field prefix format: [Round N][Phase][Stage][Strategic Goal]
-    This ensures tag semantic weight is maximized during vector embedding for precise RAG retrieval.
-    """
-    game_phase: str = Field(
-        description='Must be one of: "Purchase Units", "Combat Move", "Noncombat Move"'
-    )
-    game_stage: str = Field(
-        description='"Early" (rounds 1-3), "Mid" (rounds 4-6), "Late" (rounds 7+)'
-    )
-    strategic_goal: str = Field(
-        description='Overall campaign goal, e.g. "Southern Expansion", "Pacific Dominance"'
-    )
-    tactical_goal: str = Field(
-        description='Specific tactical objective this lesson addresses, e.g. "Capture Kwangtung"'
-    )
-    round: int = Field(
-        description="The game round this lesson primarily references"
-    )
-    text: str = Field(
-        description=(
-            "Full lesson text — this is the PRIMARY field used for RAG retrieval, so it must "
-            "contain ALL key information. "
-            "MUST start with: [Round N][Phase][Stage][Strategic Goal] "
-            "Then include: (1) what happened, (2) specific unit counts, (3) what should have been done instead. "
-            "BAD example: '[Round 2][Purchase Units][Early][Southern Expansion] Japan failed to purchase enough infantry.' "
-            "(too vague, no numbers, no corrective action) "
-            "GOOD example: '[Round 2][Purchase Units][Early][Southern Expansion] Japan bought 2 armour (12 PU) "
-            "but only 1 infantry (3 PU), leaving 4 infantry on Japan with only 2 transports. "
-            "Should have bought 1 transport (7 PU) + 2 infantry (6 PU) + 1 armour (6 PU) to resolve the "
-            "transport bottleneck before stockpiling more land units.' "
-            "The text MUST mention concrete numbers (unit counts, PU costs, territory names)."
-        )
-    )
-    generalized_principle: str = Field(
-        description=(
-            "A reusable strategic principle abstracted from this specific lesson. "
-            "Must be applicable across different games, not tied to exact territory states. "
-            "BAD: 'Buy more infantry for Kwangtung' (too specific). "
-            "GOOD: 'When japan_land ≥ 4 and transports ≤ 2, buy transports before infantry — "
-            "island units have zero combat value until shipped.' "
-            "GOOD: 'Always commit ≥ 1.5x defender count when attacking; if ratio < 1.5, "
-            "add aircraft support or defer to next round.' "
-            "GOOD: 'In NCM, dispatch ALL empty transports every round — an idle transport is 7 PU wasted.'"
-        )
-    )
-    trigger: str = Field(
-        description=(
-            "Trigger condition: MUST include at least 2 specific territory names AND "
-            "concrete unit counts for both sides. "
-            'Example: "Round 3, Kwangtung has 2 UK infantry defenders, '
-            'Japan has 4 infantry + 1 artillery in Kiangsi available"'
-        )
-    )
-    mistake: str = Field(
-        description=(
-            "Specific mistake made this game: MUST include round number, territory name, "
-            "and unit counts. "
-            'Example: "Round 3 Purchase: bought 2 infantry instead of 3, '
-            'leaving Kwangtung unreachable in round 4 Combat Move"'
-        )
-    )
-    action: str = Field(
-        description=(
-            "Concrete in-game action to take next time. "
-            "MUST reference real game actions (purchase / move / attack) with territory + unit count. "
-            "NEVER write abstract actions like 'use diplomacy' or 'negotiate'. "
-            'Example: "In Purchase Units phase of round N, buy 3 infantry when '
-            'Kwangtung attack is planned for round N+1"'
-        )
-    )
+# ***************************************************************
+# National Strategy — persistent cross-game document
+# ***************************************************************
+
+def load_national_strategy(path: str) -> dict:
+    """Load national_strategy.json; return empty structure if missing."""
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read().strip()
+            if content:
+                data = json.loads(content)
+                print(f"[NS] Loaded national strategy v{data.get('version', '?')} "
+                      f"({len(data.get('strategic_plans', []))} plans)")
+                return data
+    print("[NS] No national strategy found — will initialize from scratch")
+    return {
+        "nation": "Japan",
+        "version": 0,
+        "last_updated_game": None,
+        "core_doctrine": "",
+        "strategic_plans": [],
+        "known_risks": [],
+    }
+
+
+def save_national_strategy(path: str, ns: dict) -> None:
+    """Save national strategy back to JSON."""
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    ns["version"] = ns.get("version", 0) + 1
+    with open(path, "w", encoding="utf-8") as f:
+        json.dump(ns, f, ensure_ascii=False, indent=2)
+    print(f"[NS] Saved national strategy v{ns['version']} → {path}")
+
+
+def ns_to_prompt_text(ns: dict) -> str:
+    """Format national strategy as text for LLM prompt injection."""
+    if not ns or not ns.get("strategic_plans"):
+        return ""
+    lines = [f"=== NATIONAL STRATEGY ({ns.get('nation', 'Unknown')}) ==="]
+    if ns.get("core_doctrine"):
+        lines.append(f"Core Doctrine: {ns['core_doctrine']}")
+    lines.append("")
+    for sp in ns.get("strategic_plans", []):
+        status = sp.get("status", "proposed")
+        lines.append(f"[{status.upper()}] {sp['name']} (priority {sp.get('priority', '?')}, "
+                      f"rounds {sp.get('target_rounds', '?')})")
+        lines.append(f"  Reason: {sp.get('reason', 'N/A')}")
+        for action in sp.get("key_actions", []):
+            lines.append(f"  - {action}")
+        lines.append(f"  Expected: {sp.get('expected_outcome', 'N/A')}")
+        if sp.get("lessons_learned"):
+            lines.append(f"  Lessons: {'; '.join(sp['lessons_learned'])}")
+        lines.append("")
+    if ns.get("known_risks"):
+        lines.append("KNOWN RISKS:")
+        for risk in ns["known_risks"]:
+            lines.append(f"  - {risk.get('description', '')} → {risk.get('mitigation', '')}")
+    return "\n".join(lines)
+
+
+# ***************************************************************
+# Strategic Plan data models (game-level, cross-round)
+# ***************************************************************
+
+class StrategicPlan(BaseModel):
+    """A game-level strategic plan that persists across rounds."""
+    plan_id: str = Field(description='Unique ID, e.g. "sp_secure_coast"')
+    name: str = Field(description='Human-readable name, e.g. "Secure Chinese Coast"')
+    reason: str = Field(description="Why this plan is important — strategic rationale")
+    actions: list[str] = Field(description="Concrete actions needed to execute this plan")
     expected_outcome: str = Field(
+        description="What success looks like, with territory names and timeline"
+    )
+    target_round: int = Field(
+        description="Expected completion round (e.g. 3 means 'by end of round 3')"
+    )
+    status: str = Field(
+        default="active",
+        description='"active", "completed", "abandoned"',
+    )
+    progress: list[str] = Field(
+        default_factory=list,
+        description="Per-round progress entries, e.g. 'Round 2: captured Kiangsu'",
+    )
+
+
+class StrategicPlansInit(BaseModel):
+    """LLM output when initializing strategic plans at game start."""
+    plans: list[StrategicPlan] = Field(
+        description="2-4 strategic plans based on national strategy and current board state"
+    )
+
+
+class StrategicPlanReview(BaseModel):
+    """Post-game evaluation of a single Strategic Plan."""
+    plan_id: str = Field(description="ID of the plan being reviewed")
+    plan_name: str = Field(description="Name of the plan")
+    achieved: bool = Field(description="Was the expected outcome achieved?")
+    actual_outcome: str = Field(
+        description="What actually happened — territory changes, IPC impact, etc."
+    )
+    failure_chain: str = Field(
+        default="",
         description=(
-            "Quantifiable outcome: must include IPC gained, territory names, or force ratio. "
-            'Example: "Capture Kwangtung (IPC +3), open route to French Indo-China next round"'
+            "If failed: causal chain explaining WHY. "
+            'Example: "Failed to capture FIC by round 5 because Yunnan was never taken, '
+            'blocking the land route. Chinese forces held Yunnan with 3 infantry while Japan '
+            'had only 2 infantry in Kwangsi — insufficient force ratio."'
+        ),
+    )
+    root_cause: str = Field(
+        description=(
+            '"strategy_error" — the plan itself was flawed (wrong target, wrong timing). '
+            '"execution_error" — the plan was sound but a specific step failed.'
         )
     )
-    legal_action_required: str = Field(
+    root_cause_detail: str = Field(
+        description="Which specific step or decision caused the failure"
+    )
+    lesson: str = Field(
         description=(
-            "Exact in-game action string. "
-            'Examples: "purchase infantry x3", "attack Kwangtung with 4 infantry 1 artillery", '
-            '"transport 2 infantry from Japan to 19 Sea Zone"'
+            "Reusable strategic lesson. Must be concrete and include territory/unit references. "
+            'Example: "When pushing toward FIC, must secure Yunnan first (needs >= 3 inf vs '
+            'Chinese defense). Skipping Yunnan leaves the southern corridor blocked."'
+        )
+    )
+    national_strategy_update: str = Field(
+        description=(
+            "Recommended change to national_strategy.json. "
+            'Examples: "Add known_risk: Yunnan blocks FIC push if not cleared", '
+            '"Update sp_capture_fic: add Yunnan as prerequisite action", '
+            '"Increase confidence for sp_secure_coast to 0.9"'
         )
     )
 
 
-class ReflexionOutput(BaseModel):
-    """Complete structured reflection output covering all three action phases."""
-    lessons: list[ReflexionLesson] = Field(
-        description=(
-            "3-6 reflection entries covering Purchase Units, Combat Move, and Noncombat Move. "
-            "Each phase should have 1-2 entries based on actual game events."
-        )
-    )
-
-
-class CriticVerdict(BaseModel):
-    """Critic's verdict on a single lesson."""
-    has_territory_names: bool = Field(
-        description="Does 'trigger' contain at least 2 specific territory names?"
-    )
-    has_unit_counts: bool = Field(
-        description="Does 'trigger' contain concrete unit counts for both sides?"
-    )
-    is_executable: bool = Field(
-        description="Does 'action' describe a real in-game action with territory + unit count?"
-    )
-    has_specific_mistake: bool = Field(
-        description="Does 'mistake' contain round number + territory + unit counts?"
-    )
-    text_has_numbers: bool = Field(
-        description="Does 'text' contain at least 2 concrete numbers (unit counts or PU values)?"
-    )
-    principle_is_general: bool = Field(
-        description="Is 'generalized_principle' applicable across different games (not tied to exact territories)?"
-    )
-    total_score: int = Field(description="Sum of the 6 booleans above (0-6)")
-    needs_rewrite: bool = Field(description="True when total_score < 4")
-    rewritten_trigger: Optional[str] = Field(
-        default=None,
-        description="Rewritten trigger with 2+ territories and unit counts"
-    )
-    rewritten_action: Optional[str] = Field(
-        default=None,
-        description="Rewritten action with territory name and unit count"
-    )
-    rewritten_mistake: Optional[str] = Field(
-        default=None,
-        description="Rewritten mistake with round number, territory, unit counts"
-    )
-    rewritten_legal_action: Optional[str] = Field(
-        default=None,
-        description="Rewritten legal_action_required as a specific game action string"
-    )
-    rewritten_text: Optional[str] = Field(
-        default=None,
-        description="Rewritten text with concrete numbers, unit counts, PU costs, and corrective action"
-    )
-    rewritten_principle: Optional[str] = Field(
-        default=None,
-        description="Rewritten generalized_principle that is reusable across games"
+class StrategicReflexionOutput(BaseModel):
+    """Complete post-game reflexion covering all strategic plans."""
+    reviews: list[StrategicPlanReview] = Field(
+        description="One review per strategic plan that was active during the game"
     )
 
 
@@ -420,7 +416,7 @@ class GameMemory:
 
 
 # ***************************************************************
-# ReflexionEngine (以下是reflexion相关代码，等待修改 4.14)
+# ReflexionEngine — Strategic Plan-level post-game reflection
 # ***************************************************************
 
 class ReflexionEngine:
@@ -429,21 +425,18 @@ class ReflexionEngine:
         self,
         memory: GameMemory,
         experiences_path: str = "./memory/experiences.json",
+        ns_path: str = "./knowledge/national_strategy.json",
         reflect_model: str = "gpt-4o",
-        critic_model: str = "gpt-4o-mini",
     ):
         self.memory = memory
         self.experiences_path = experiences_path
+        self.ns_path = ns_path
 
         _base = ChatOpenAI(model=reflect_model, temperature=0.1)
-        self.structured_llm = _base.with_structured_output(ReflexionOutput)
+        self.structured_llm = _base.with_structured_output(StrategicReflexionOutput)
+        self.fallback_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
-        _critic_base = ChatOpenAI(model=critic_model, temperature=0)
-        self.critic_llm = _critic_base.with_structured_output(CriticVerdict)
-
-        self.fallback_llm = ChatOpenAI(model=critic_model, temperature=0)
-
-    # ── 429 限流重试 ──────────────────────────────────────────
+    # ── 429 rate-limit retry ─────────────────────────────────
 
     @staticmethod
     def _invoke_with_rate_limit_retry(fn, label: str = "LLM", max_retries: int = 5):
@@ -469,336 +462,169 @@ class ReflexionEngine:
                 return None
         return None
 
-    # ── 主入口 ────────────────────────────────────────────────
+    # ── Main entry point ─────────────────────────────────────
 
     def reflect_and_store(
         self,
         game_id: str,
         game_log: list[str],
         result: str,
-        round_num: int = 0,
-        strategic_goal: str = "Southern Expansion",
-    ) -> list[str]:
+        round_num: int,
+        plan_tracker: list[StrategicPlan],
+    ) -> list[StrategicPlanReview]:
         """
-        Call after game ends. Three-layer pipeline:
-          1. Structured generation (JSON Schema enforced, 3 action-phase lessons)
-          2. Critic review (rewrite low-quality lessons)
-          3. Tiered storage (score ≥ 5 → FAISS + JSON; below 5 → JSON only)
+        Post-game strategic reflexion.
+        Evaluates each Strategic Plan: achieved? failure chain? strategy vs execution error?
+        Stores lessons in FAISS + JSON, updates national_strategy.json.
         """
-        game_stage = self._get_game_stage(round_num)
+        active_plans = [p for p in plan_tracker if p.status in ("active", "completed")]
         print(
-            f"\n[Reflexion] Starting reflection game={game_id} "
-            f"round={round_num} stage={game_stage} goal={strategic_goal}"
+            f"\n[Reflexion] Starting strategic reflection game={game_id} "
+            f"round={round_num} plans={len(active_plans)}"
         )
         print(f"[Reflexion] Result: {result}")
 
-        prompt = self._build_prompt(game_log, result, round_num, game_stage, strategic_goal)
+        if not active_plans:
+            print("[Reflexion] No active plans to reflect on — skipping")
+            return []
+
+        prompt = self._build_prompt(game_log, result, round_num, active_plans)
 
         raw = self._invoke_with_rate_limit_retry(
             lambda: self.structured_llm.invoke(prompt),
-            label="structured-gen",
+            label="strategic-reflexion",
         )
+
         if raw is None:
-            print("[Reflexion] ⚠ Structured generation failed — falling back to text mode...")
-            return self._reflect_fallback(
-                game_id, game_log, result, round_num, game_stage, strategic_goal
-            )
-        raw_lessons: list[ReflexionLesson] = raw.lessons
-        print(f"[Reflexion] Generated {len(raw_lessons)} lessons")
+            print("[Reflexion] Structured generation failed — falling back to text mode")
+            return self._reflect_fallback(game_id, game_log, result, round_num, active_plans)
 
-        print("[Reflexion] Critic model reviewing...")
-        refined: list[ReflexionLesson] = []
-        rewrite_count = 0
-        for lesson in raw_lessons:
-            lesson, was_rewritten = self._critique(lesson)
-            refined.append(lesson)
-            if was_rewritten:
-                rewrite_count += 1
-        if rewrite_count:
-            print(f"[Reflexion] Critic rewrote {rewrite_count} low-quality lessons")
+        reviews: list[StrategicPlanReview] = raw.reviews
+        print(f"[Reflexion] Generated {len(reviews)} plan reviews")
 
-        scored = [
-            self._score(lesson, game_id, round_num)
-            for lesson in refined
-        ]
-        self._print_score_report(scored)
+        self._print_review_report(reviews)
 
+        # Store lessons in FAISS
         stored = 0
-        for item in scored:
-            if item["score"] >= 5:
-                rag_text = item.get("rag_text", item["text"])
+        for review in reviews:
+            if review.lesson and review.lesson.strip():
+                rag_text = (
+                    f"[Plan: {review.plan_name}] "
+                    f"[{'ACHIEVED' if review.achieved else 'FAILED'}] "
+                    f"{review.lesson}"
+                )
                 self.memory.add_experience(
                     rag_text,
                     metadata={
-                        "game_phase": item["game_phase"],
-                        "game_stage": item["game_stage"],
-                        "strategic_goal": item["strategic_goal"],
-                        "round": item["round"],
+                        "source": "strategic_reflexion",
+                        "plan_id": review.plan_id,
+                        "achieved": review.achieved,
+                        "root_cause": review.root_cause,
                     },
                 )
                 stored += 1
+        print(f"[Reflexion] {stored} strategic lessons added to RAG")
 
-        print(
-            f"[Reflexion] {stored} lessons (score ≥ 5) added to RAG  |  "
-            f"{len(scored) - stored} lessons (score < 5) JSON only"
-        )
-        self._save_to_json(game_id, result, round_num, strategic_goal, scored)
-        return [s["text"] for s in scored]
+        # Save to experiences JSON
+        self._save_to_json(game_id, result, round_num, plan_tracker, reviews)
 
-    # ── 结构化 Prompt ─────────────────────────────────────────
+        # Update national strategy
+        self._update_national_strategy(game_id, reviews)
+
+        return reviews
+
+    # ── Prompt builder ───────────────────────────────────────
 
     @staticmethod
     def _build_prompt(
         game_log: list[str],
         result: str,
         round_num: int,
-        game_stage: str,
-        strategic_goal: str,
+        plans: list[StrategicPlan],
     ) -> str:
-        log_text = "\n".join(game_log[-30:])   # 最近30条日志，控制 token
-        n = 6  # 生成条数：3 个阶段 × 2 条
+        log_text = "\n".join(game_log[-40:])
 
-        return f"""You just completed rounds 1-{round_num} of Axis & Allies Pacific 1940 as Japan.
+        plans_text = ""
+        for p in plans:
+            progress_str = "\n    ".join(p.progress) if p.progress else "(no progress recorded)"
+            plans_text += f"""
+  Plan: {p.name} (id: {p.plan_id})
+    Status: {p.status}
+    Reason: {p.reason}
+    Actions planned: {'; '.join(p.actions)}
+    Expected outcome: {p.expected_outcome}
+    Target round: {p.target_round}
+    Progress log:
+    {progress_str}
+"""
+
+        return f"""You just completed rounds 1-{round_num} of Axis & Allies Pacific 1940.
 Game result: {result}
-Current game stage: {game_stage} (rounds 1-3=Early, 4-6=Mid, 7+=Late)
-Strategic Goal: {strategic_goal}
+
+The following Strategic Plans were active during this game:
+{plans_text}
 
 Game log (most recent actions):
 {log_text}
 
-Generate exactly {n} reflection entries. Each entry MUST be a valid JSON object.
+For EACH strategic plan above, generate a review. Your analysis chain for each plan:
 
-Cover all 3 action phases (2 entries each):
-  - "Purchase Units"   → what to buy to enable future attacks
-  - "Combat Move"      → which territories to attack and with what forces
-  - "Noncombat Move"   → how to move transports, reinforce, and reposition
+1. OUTCOME CHECK: Was the expected outcome achieved? Check territories, IPC, unit positions.
 
-Rules:
-1. "game_phase" must be EXACTLY one of: "Purchase Units", "Combat Move", "Noncombat Move"
-2. "game_stage" must be EXACTLY one of: "Early", "Mid", "Late"
-3. "strategic_goal" must be: "{strategic_goal}"
-4. "text" is the MOST IMPORTANT FIELD — it is used for RAG retrieval in future games.
-   MUST start with: [Round N][phase][stage][{strategic_goal}]
-   Then MUST include ALL of: (a) what happened, (b) specific unit counts and PU costs,
-   (c) what should have been done instead with exact numbers.
-   BAD: "[Round 2][Purchase Units][Early][Southern Expansion] Japan failed to buy enough infantry."
-   GOOD: "[Round 2][Purchase Units][Early][Southern Expansion] Japan bought 2 armour (12 PU) + 1 infantry (3 PU) = 15 PU,
-     leaving 5 infantry stuck on Japan with only 1 transport in 6 SZ. Should have bought 1 transport (7 PU) +
-     1 armour (6 PU) + 1 infantry (3 PU) to fix the transport bottleneck."
-5. "generalized_principle" must be a REUSABLE rule applicable in ANY game, not tied to specific territory states.
-   BAD: "Buy more infantry for Kwangtung" (too specific, useless in a different game state)
-   GOOD: "When japan_land >= 4 and transports <= 2, buy transports before infantry — island units = zero combat value"
-   GOOD: "Always commit >= 1.5x defender count; if ratio < 1.5, add aircraft or defer to next round"
-   GOOD: "Dispatch ALL empty transports every NCM — an idle transport is 7 PU wasted per round"
-6. "action" and "legal_action_required" MUST reference real in-game actions:
-   - purchase: "buy 3 infantry", "buy 1 transport"
-   - attack: "attack Kwangtung with 3 infantry 1 artillery from Kiangsi"
-   - move: "transport 2 infantry from Japan via 6 Sea Zone to 19 Sea Zone"
-   NEVER write "use diplomacy", "negotiate", or any non-game action
-7. "trigger" MUST contain: at least 2 territory names + unit counts for both sides
-8. "mistake" MUST contain: round number + territory name + unit counts
-9. "expected_outcome" MUST be quantifiable: IPC value, territory names, force ratio
-10. Each entry must reference a DIFFERENT round or decision point from the log
-11. "round" field is the game round the lesson primarily references (1 to {round_num})
+2. If FAILED — FAILURE CHAIN ANALYSIS:
+   Trace the causal chain backward. Example:
+   "Failed to capture FIC by round 5 ← Yunnan was never taken ← only 2 infantry in Kwangsi vs 3 Chinese defenders ← insufficient force allocation to southern front"
+   Be specific: territory names, unit counts, round numbers.
+
+3. ROOT CAUSE CLASSIFICATION:
+   "strategy_error" — the plan itself was flawed (wrong target, unrealistic timeline, wrong prerequisite order)
+   "execution_error" — the plan was sound but a specific tactical step failed (bad force ratio, forgot to move units, wrong purchase)
+
+4. ROOT CAUSE DETAIL: Which exact step or decision was the root cause?
+
+5. LESSON: A reusable strategic insight for future games. Must be concrete.
+   BAD: "Should have planned better"
+   GOOD: "When pushing toward FIC, Yunnan must be cleared first (requires >= 3 infantry). Add 'Secure Yunnan' as prerequisite action before FIC assault."
+
+6. NATIONAL STRATEGY UPDATE: What should change in the persistent strategy document?
+   Examples: "Add Yunnan as prerequisite for FIC push", "Increase confidence for coastal plan to 0.9", "Add risk: UK reinforces India if FIC not taken by round 5"
 """
 
-    #**************************************************************
-    # Criticizer Model
-    #**************************************************************
-    def _critique(
-        self,
-        lesson: ReflexionLesson,
-    ) -> tuple[ReflexionLesson, bool]:
-        prompt = f"""You are a strict strategy coach reviewing a reflection entry for Axis & Allies Pacific 1940.
-
-Entry to review:
-  game_phase: {lesson.game_phase}
-  text: {lesson.text}
-  trigger: {lesson.trigger}
-  action: {lesson.action}
-  mistake: {lesson.mistake}
-  legal_action_required: {lesson.legal_action_required}
-  generalized_principle: {lesson.generalized_principle}
-
-Evaluate these 6 criteria (True/False each):
-1. has_territory_names: Does "trigger" contain at least 2 specific territory names?
-2. has_unit_counts: Does "trigger" contain concrete unit counts for both sides?
-3. is_executable: Does "action" describe a real game action with territory + unit type + count?
-   (reject vague actions like "strengthen forces", "use transport efficiently")
-4. has_specific_mistake: Does "mistake" contain round number + territory name + unit counts?
-5. text_has_numbers: Does "text" contain at least 2 concrete numbers (unit counts, PU costs, or IPC values)?
-   "Japan failed to purchase enough infantry" has ZERO numbers → False.
-   "Japan bought 2 armour (12 PU) but had 5 infantry on Japan with only 1 transport" has 4 numbers → True.
-6. principle_is_general: Is "generalized_principle" a reusable rule NOT tied to specific territories?
-   "Buy more infantry for Kwangtung" → False (too specific).
-   "When japan_land >= 4 and transports <= 2, prioritize transport purchases" → True (reusable).
-
-If total_score < 4, provide rewritten versions for the failing fields.
-Rewrite examples:
-  trigger: "Round 4, Kwangtung defended by 2 UK infantry, Japan has 4 infantry + 1 artillery in Kiangsi"
-  action: "In Combat Move round 4, move 4 infantry + 1 artillery from Kiangsi to attack Kwangtung"
-  mistake: "Round 3 Purchase: bought 2 infantry instead of 3 for Kwangtung push, Kwangtung still UK-controlled in round 5"
-  legal_action: "attack Kwangtung with 4 infantry 1 artillery"
-  text: "[Round 3][Purchase Units][Early][Southern Expansion] Japan bought 2 infantry (6 PU) instead of 3 (9 PU), leaving only 2 infantry available to attack Kwangtung which has 3 UK defenders. Should have bought 3 infantry to achieve 1.5x force ratio."
-  principle: "Always ensure attacking force >= 1.5x defenders before committing. If short, buy the deficit in Purchase or add aircraft support."
-"""
-        verdict = self._invoke_with_rate_limit_retry(
-            lambda: self.critic_llm.invoke(prompt),
-            label="critic",
-        )
-        if verdict is None or not verdict.needs_rewrite:
-            return lesson, False
-
-        rewritten = ReflexionLesson(
-            game_phase=lesson.game_phase,
-            game_stage=lesson.game_stage,
-            strategic_goal=lesson.strategic_goal,
-            tactical_goal=lesson.tactical_goal,
-            round=lesson.round,
-            text=verdict.rewritten_text or lesson.text,
-            generalized_principle=verdict.rewritten_principle or lesson.generalized_principle,
-            trigger=verdict.rewritten_trigger or lesson.trigger,
-            mistake=verdict.rewritten_mistake or lesson.mistake,
-            action=verdict.rewritten_action or lesson.action,
-            expected_outcome=lesson.expected_outcome,
-            legal_action_required=verdict.rewritten_legal_action or lesson.legal_action_required,
-        )
-        return rewritten, True
-
-    # ── 评分 ──────────────────────────────────────────────────
-
-    def _score(
-        self,
-        lesson: ReflexionLesson,
-        game_id: str,
-        round_num: int,
-    ) -> dict:
-        """
-        Scoring dimensions (max 12 points, capped to 10 for star display):
-          format          0-2  text prefix format correct + game_phase valid
-          specificity     0-3  trigger contains number + territory name + unit name
-          actionability   0-3  action contains territory + unit + legal_action non-empty
-          reproducibility 0-2  mistake contains round number + territory name
-          generalization  0-2  text has numbers + principle is general
-        """
-        text = lesson.text
-
-        # format
-        score_fmt = 0
-        if re.search(r'\[Round \d+\]', text):                 score_fmt += 1
-        if lesson.game_phase in VALID_PHASES:                  score_fmt += 1
-
-        # specificity
-        score_spc = 0
-        trigger_all = lesson.trigger + " " + lesson.mistake
-        if re.search(r'\d+', lesson.trigger):                   score_spc += 1
-        if any(t in trigger_all for t in _TERRITORY_HINTS):    score_spc += 1
-        if any(u in lesson.trigger for u in _UNIT_HINTS):      score_spc += 1
-
-        # actionability
-        score_act = 0
-        if any(t in lesson.action for t in _TERRITORY_HINTS):  score_act += 1
-        if any(u in lesson.action for u in _UNIT_HINTS):       score_act += 1
-        if len(lesson.legal_action_required.strip()) > 10:     score_act += 1
-
-        # reproducibility
-        score_rep = 0
-        mistake_lower = lesson.mistake.lower()
-        if re.search(r'round \d+', mistake_lower) or re.search(r'\d+', lesson.mistake):
-            score_rep += 1
-        if any(t in lesson.mistake for t in _TERRITORY_HINTS): score_rep += 1
-
-        # generalization (new dimension)
-        score_gen = 0
-        numbers_in_text = len(re.findall(r'\d+', text))
-        if numbers_in_text >= 2:                               score_gen += 1
-        principle = getattr(lesson, 'generalized_principle', '')
-        if principle and len(principle) > 20 and not any(
-            t in principle for t in ["Kwangtung", "Kiangsi", "Manchuria", "Borneo"]
-        ):
-            score_gen += 1
-
-        total = min(10, score_fmt + score_spc + score_act + score_rep + score_gen)
-        filled = min(5, round(total / 2))
-        stars = "★" * filled + "☆" * (5 - filled)
-
-        phase_short = {"Purchase Units": "purchase", "Combat Move": "combat",
-                       "Noncombat Move": "ncm"}.get(lesson.game_phase, "misc")
-        entry_id = f"exp_{game_id[:6]}_{round_num}_{phase_short}"
-
-        rag_text = text
-        if principle and principle.strip():
-            rag_text = f"{text}\n[Principle] {principle.strip()}"
-
-        return {
-            "id":             entry_id,
-            "game_phase":     lesson.game_phase,
-            "game_stage":     lesson.game_stage,
-            "strategic_goal": lesson.strategic_goal,
-            "tactical_goal":  lesson.tactical_goal,
-            "round":          lesson.round,
-            "text":           text,
-            "rag_text":       rag_text,
-            "generalized_principle": principle,
-            "structured": {
-                "trigger":               lesson.trigger,
-                "mistake":               lesson.mistake,
-                "action":                lesson.action,
-                "expected_outcome":      lesson.expected_outcome,
-                "legal_action_required": lesson.legal_action_required,
-            },
-            "score":          total,
-            "stars":          stars,
-            "score_details": {
-                "format":         score_fmt,
-                "specificity":    score_spc,
-                "actionability":  score_act,
-                "reproducibility": score_rep,
-                "generalization": score_gen,
-            },
-            "in_rag": total >= 5,
-        }
-
-    # ── 评分报告 ──────────────────────────────────────────────
+    # ── Review report ────────────────────────────────────────
 
     @staticmethod
-    def _print_score_report(scored: list[dict]) -> None:
-        if not scored:
+    def _print_review_report(reviews: list[StrategicPlanReview]) -> None:
+        if not reviews:
             return
-        avg = sum(s["score"] for s in scored) / len(scored)
-        print("\n[Reflexion] Lesson quality score report")
-        print(f"  {'#':<3} {'Score':<6} {'Stars':<10} {'Phase':<18} {'Preview'}")
-        print(f"  {'─'*3} {'─'*6} {'─'*10} {'─'*18} {'─'*40}")
-        for i, item in enumerate(scored, 1):
-            preview = item["text"][:55].replace("\n", " ")
-            if len(item["text"]) > 55:
-                preview += "…"
-            phase = item.get("game_phase", "?")[:16]
-            print(f"  {i:<3} {item['score']:<6} {item['stars']:<10} {phase:<18} {preview}")
-        print(f"  {'─'*3} {'─'*6} {'─'*10} {'─'*18} {'─'*40}")
-        rag_n = sum(1 for s in scored if s["in_rag"])
-        print(f"  Avg score: {avg:.1f}  |  ≥5 into RAG: {rag_n}  |  <5 JSON only: {len(scored)-rag_n}\n")
+        print("\n[Reflexion] Strategic Plan Review Report")
+        print(f"  {'#':<3} {'Result':<10} {'Root Cause':<18} {'Plan'}")
+        print(f"  {'─'*3} {'─'*10} {'─'*18} {'─'*40}")
+        for i, r in enumerate(reviews, 1):
+            status = "ACHIEVED" if r.achieved else "FAILED"
+            print(f"  {i:<3} {status:<10} {r.root_cause:<18} {r.plan_name}")
+            if not r.achieved and r.failure_chain:
+                chain_preview = r.failure_chain[:80]
+                if len(r.failure_chain) > 80:
+                    chain_preview += "..."
+                print(f"      Chain: {chain_preview}")
+            if r.lesson:
+                lesson_preview = r.lesson[:80]
+                if len(r.lesson) > 80:
+                    lesson_preview += "..."
+                print(f"      Lesson: {lesson_preview}")
+        achieved_n = sum(1 for r in reviews if r.achieved)
+        print(f"  {'─'*3} {'─'*10} {'─'*18} {'─'*40}")
+        print(f"  Achieved: {achieved_n}/{len(reviews)}\n")
 
-    # ── 辅助：回合阶段 ────────────────────────────────────────
-
-    @staticmethod
-    def _get_game_stage(round_num: int) -> str:
-        if round_num <= 3:
-            return "Early"
-        elif round_num <= 6:
-            return "Mid"
-        else:
-            return "Late"
-
-    # ── 写入 JSON ─────────────────────────────────────────────
+    # ── Save to experiences JSON ─────────────────────────────
 
     def _save_to_json(
         self,
         game_id: str,
         result: str,
         round_num: int,
-        strategic_goal: str,
-        scored: list[dict],
+        plan_tracker: list[StrategicPlan],
+        reviews: list[StrategicPlanReview],
     ) -> None:
         os.makedirs(os.path.dirname(self.experiences_path), exist_ok=True)
 
@@ -809,28 +635,64 @@ Rewrite examples:
                 if content:
                     existing = json.loads(content)
 
-        avg = sum(s["score"] for s in scored) / len(scored) if scored else 0
+        plans_data = [p.model_dump() for p in plan_tracker]
+        reviews_data = [r.model_dump() for r in reviews]
+
         existing.append({
-            "game_id":        game_id,
-            "result":         result,
-            "round_num":      round_num,
-            "game_stage":     self._get_game_stage(round_num),
-            "strategic_goal": strategic_goal,
-            "avg_score":      round(avg, 1),
-            "rag_threshold":  5,
-            "lessons":        scored,
+            "game_id": game_id,
+            "result": result,
+            "round_num": round_num,
+            "strategic_plans": plans_data,
+            "reviews": reviews_data,
         })
 
         with open(self.experiences_path, "w", encoding="utf-8") as f:
             json.dump(existing, f, ensure_ascii=False, indent=2)
 
-        rag_n = sum(1 for s in scored if s["in_rag"])
-        print(
-            f"[Reflexion] Written to {self.experiences_path} "
-            f"(avg score {avg:.1f}, {rag_n}/{len(scored)} in RAG)"
-        )
+        print(f"[Reflexion] Written to {self.experiences_path}")
 
-    # ── 文本模式兜底 ──────────────────────────────────────────
+    # ── Update national strategy ─────────────────────────────
+
+    def _update_national_strategy(
+        self,
+        game_id: str,
+        reviews: list[StrategicPlanReview],
+    ) -> None:
+        ns = load_national_strategy(self.ns_path)
+        ns["last_updated_game"] = game_id
+
+        ns_plans = {sp["id"]: sp for sp in ns.get("strategic_plans", [])}
+
+        for review in reviews:
+            sp = ns_plans.get(review.plan_id)
+            if sp is None:
+                continue
+
+            if review.achieved:
+                sp["status"] = "validated"
+                sp["confidence"] = min(1.0, sp.get("confidence", 0.5) + 0.15)
+            else:
+                sp["confidence"] = max(0.1, sp.get("confidence", 0.5) - 0.1)
+
+            if review.lesson and review.lesson.strip():
+                lessons = sp.get("lessons_learned", [])
+                lessons.append(review.lesson.strip())
+                sp["lessons_learned"] = lessons[-5:]
+
+            if review.national_strategy_update and review.national_strategy_update.strip():
+                update_text = review.national_strategy_update.strip()
+                if update_text.lower().startswith("add risk"):
+                    risks = ns.get("known_risks", [])
+                    risks.append({
+                        "description": update_text,
+                        "mitigation": "(auto-generated from reflexion)",
+                    })
+                    ns["known_risks"] = risks
+
+        ns["strategic_plans"] = list(ns_plans.values())
+        save_national_strategy(self.ns_path, ns)
+
+    # ── Fallback: text-mode reflexion ────────────────────────
 
     def _reflect_fallback(
         self,
@@ -838,60 +700,45 @@ Rewrite examples:
         game_log: list[str],
         result: str,
         round_num: int,
-        game_stage: str,
-        strategic_goal: str,
-    ) -> list[str]:
+        plans: list[StrategicPlan],
+    ) -> list[StrategicPlanReview]:
+        plan_names = ", ".join(p.name for p in plans)
         log_text = "\n".join(game_log[-20:])
         prompt = (
-            f"You completed round {round_num} of Axis & Allies Pacific 1940 as Japan.\n"
-            f"Result: {result}\nStrategic Goal: {strategic_goal}\n\n"
+            f"You completed round {round_num} of Axis & Allies Pacific 1940.\n"
+            f"Result: {result}\n"
+            f"Active plans: {plan_names}\n\n"
             f"Game log:\n{log_text}\n\n"
-            f"Write 3 lessons, one per action phase (Purchase Units / Combat Move / Noncombat Move).\n"
-            f"Each lesson format (strictly follow):\n"
-            f"[Round N][Phase][{game_stage}][{strategic_goal}] <lesson text with territory names and unit counts>"
+            f"For each plan, write one line: [Plan Name] ACHIEVED/FAILED — reason — lesson"
         )
         response = self.fallback_llm.invoke(prompt)
-        lines = [l.strip() for l in response.content.strip().split("\n") if l.strip()]
-        lessons = [l for l in lines if l.startswith("[Round")]
-        if not lessons:
-            lessons = lines[:3]
+        lines = [ln.strip() for ln in response.content.strip().split("\n") if ln.strip()]
 
-        # Simple scoring and storage
-        scored = []
-        for lesson in lessons:
-            s_fmt = 1 if re.search(r'\[Round \d+\]', lesson) else 0
-            s_spc = (1 if any(t in lesson for t in _TERRITORY_HINTS) else 0) + \
-                    (1 if re.search(r'\d+', lesson) else 0)
-            score = min(10, s_fmt + s_spc + 2)
-            filled = min(5, round(score / 2))
-            stars = "★" * filled + "☆" * (5 - filled)
+        reviews = []
+        for i, plan in enumerate(plans):
+            line = lines[i] if i < len(lines) else f"{plan.name} — FAILED — no data"
+            achieved = "ACHIEVED" in line.upper()
+            reviews.append(StrategicPlanReview(
+                plan_id=plan.plan_id,
+                plan_name=plan.name,
+                achieved=achieved,
+                actual_outcome=line,
+                failure_chain="" if achieved else line,
+                root_cause="execution_error",
+                root_cause_detail="(fallback mode — detail unavailable)",
+                lesson=line,
+                national_strategy_update="",
+            ))
 
-            phase = "Combat Move"
-            for p in VALID_PHASES:
-                if p in lesson:
-                    phase = p
-                    break
+        self._print_review_report(reviews)
 
-            scored.append({
-                "id":             f"exp_{game_id[:6]}_{round_num}_fallback",
-                "game_phase":     phase,
-                "game_stage":     game_stage,
-                "strategic_goal": strategic_goal,
-                "text":           lesson,
-                "score":          score,
-                "stars":          stars,
-                "score_details":  {"format": s_fmt, "specificity": s_spc,
-                                   "actionability": 2, "reproducibility": 0},
-                "in_rag":         score >= 5,
-                "structured":     None,
-                "tactical_goal":  "",
-                "round":          round_num,
-            })
+        for review in reviews:
+            if review.lesson:
+                self.memory.add_experience(
+                    f"[Plan: {review.plan_name}] {review.lesson}",
+                    metadata={"source": "strategic_reflexion", "plan_id": review.plan_id},
+                )
 
-        self._print_score_report(scored)
-        for item in scored:
-            if item["in_rag"]:
-                self.memory.add_experience(item["text"])
-
-        self._save_to_json(game_id, result, round_num, strategic_goal, scored)
-        return [s["text"] for s in scored]
+        self._save_to_json(game_id, result, round_num, plans, reviews)
+        self._update_national_strategy(game_id, reviews)
+        return reviews

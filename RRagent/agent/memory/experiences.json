@@ -2431,5 +2431,876 @@
         "in_rag": true
       }
     ]
+  },
+  {
+    "game_id": "184e020b",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Kiangsi to attack Hunan.",
+          "Use infantry and artillery from Shantung to attack Anhwe.",
+          "Deploy tactical bombers from Japan to support attacks on Hunan and Anhwe.",
+          "Reinforce Kiangsu with infantry from Jehol."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zone (Chahar, Anhwe, Hunan, Yunnan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the country successfully completed its political and purchase phases, acquiring 1 armor and 2 infantry. Key troop movements included transferring 5 infantry and 1 artillery from Manchuria to Shantung, 3 infantry from Korea to Shantung, and 1 infantry and 1 artillery from Jehol to Shantung, consolidating forces for an upcoming attack on Kwangtung. Japan's IPC status remained unchanged as no territories were attacked or captured this round.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 2 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) count remained stable, with no territories attacked or captured during this turn.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 3 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) balance remained stable, with no significant changes reported during this turn.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements, although specific territories attacked or captured were not detailed in the log. Japan purchased additional units, enhancing its military presence, and executed both combat and non-combat moves effectively. The round concluded with Japan placing new units on the board and finalizing its turn without any reported IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase concluded successfully, and all Production Units (PUs) were spent on unit purchases, although specific units were not detailed in the log. The combat and non-combat movement phases also ended without any reported attacks or troop movements, indicating a stable position for Japan. Consequently, there were no changes in IPCs, and the turn ended without further actions.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Armour, 2 Artillery, and 3 Infantry for a total of 23 PUs, leaving 2 PUs remaining. There were no combat or non-combat movements reported, indicating a focus on consolidating forces and preparing for future operations rather than immediate territorial expansion. The turn concluded without any changes in IPCs from combat actions."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Prepare to attack Kwangtung once at war with British.",
+          "Move infantry and artillery from Kwangsi to attack Kwangtung.",
+          "Use transport in 20 Sea Zone to reinforce Kwangtung with units from Japan.",
+          "After capturing Kwangtung, prepare to move into French Indo China."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the country successfully completed its political and purchase phases, acquiring 1 armor and 2 infantry. Key troop movements included transferring 5 infantry and 1 artillery from Manchuria to Shantung, 3 infantry from Korea to Shantung, and 1 infantry and 1 artillery from Jehol to Shantung, consolidating forces for an upcoming attack on Kwangtung. Japan's IPC status remained unchanged as no territories were attacked or captured this round.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 2 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) count remained stable, with no territories attacked or captured during this turn.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 3 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) balance remained stable, with no significant changes reported during this turn.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements, although specific territories attacked or captured were not detailed in the log. Japan purchased additional units, enhancing its military presence, and executed both combat and non-combat moves effectively. The round concluded with Japan placing new units on the board and finalizing its turn without any reported IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase concluded successfully, and all Production Units (PUs) were spent on unit purchases, although specific units were not detailed in the log. The combat and non-combat movement phases also ended without any reported attacks or troop movements, indicating a stable position for Japan. Consequently, there were no changes in IPCs, and the turn ended without further actions.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Armour, 2 Artillery, and 3 Infantry for a total of 23 PUs, leaving 2 PUs remaining. There were no combat or non-combat movements reported, indicating a focus on consolidating forces and preparing for future operations rather than immediate territorial expansion. The turn concluded without any changes in IPCs from combat actions."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone.",
+          "Build additional transports to ensure troop flow."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity by round 7.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the country successfully completed its political and purchase phases, acquiring 1 armor and 2 infantry. Key troop movements included transferring 5 infantry and 1 artillery from Manchuria to Shantung, 3 infantry from Korea to Shantung, and 1 infantry and 1 artillery from Jehol to Shantung, consolidating forces for an upcoming attack on Kwangtung. Japan's IPC status remained unchanged as no territories were attacked or captured this round.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 2 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) count remained stable, with no territories attacked or captured during this turn.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements without engaging in combat. Japan purchased 3 infantry units and 1 aircraft carrier, bolstering its naval and ground forces. The overall IPC (Industrial Production Certificate) balance remained stable, with no significant changes reported during this turn.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and made strategic troop movements, although specific territories attacked or captured were not detailed in the log. Japan purchased additional units, enhancing its military presence, and executed both combat and non-combat moves effectively. The round concluded with Japan placing new units on the board and finalizing its turn without any reported IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase concluded successfully, and all Production Units (PUs) were spent on unit purchases, although specific units were not detailed in the log. The combat and non-combat movement phases also ended without any reported attacks or troop movements, indicating a stable position for Japan. Consequently, there were no changes in IPCs, and the turn ended without further actions.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Armour, 2 Artillery, and 3 Infantry for a total of 23 PUs, leaving 2 PUs remaining. There were no combat or non-combat movements reported, indicating a focus on consolidating forces and preparing for future operations rather than immediate territorial expansion. The turn concluded without any changes in IPCs from combat actions."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not control all Chinese coastal provinces and their buffer zones by round 3. No significant territorial gains were made, and IPC status remained unchanged throughout the rounds.",
+        "failure_chain": "Failed to secure Chinese coast by round 3 ← No combat engagements in coastal provinces ← Troop movements focused on consolidation rather than offensive actions ← Lack of engagement in planned attacks on Hunan and Anhwe.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The failure to execute planned attacks on Hunan and Anhwe by round 3 led to the inability to compress Chinese forces westward.",
+        "lesson": "When planning to secure the Chinese coast, ensure that offensive operations are prioritized and executed by round 3 to compress Chinese forces and gain IPC from coastal provinces.",
+        "national_strategy_update": "Add a requirement to prioritize and execute attacks on Hunan and Anhwe by round 3 in the 'Secure Chinese Coast' plan."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Kwangtung and French Indo China were not captured by round 5. No ground units were staged for an India push.",
+        "failure_chain": "Failed to capture Kwangtung by round 5 ← No combat operations initiated against Kwangtung ← Focus remained on troop consolidation rather than offensive action ← Lack of engagement with British forces.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan to attack Kwangtung was not executed, resulting in no progress toward capturing French Indo China.",
+        "lesson": "Ensure that planned attacks on Kwangtung are executed by round 5 to open the gateway to French Indo China and stage ground units for further operations.",
+        "national_strategy_update": "Add a requirement to execute the attack on Kwangtung by round 5 in the 'Capture Kwangtung and French Indo China' plan."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "India was not captured by round 6, and no significant progress was made toward staging an attack from French Indo China or Burma.",
+        "failure_chain": "Failed to capture India by round 6 ← No staging of ground units in French Indo China/Burma ← Kwangtung and French Indo China not captured ← No offensive operations executed to secure staging areas.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The failure to capture Kwangtung and French Indo China prevented the staging of ground units necessary for the India campaign.",
+        "lesson": "Ensure that the capture of Kwangtung and French Indo China is prioritized and executed to enable staging for an India campaign.",
+        "national_strategy_update": "Add a prerequisite to capture Kwangtung and French Indo China before staging for India in the 'Capture India' plan."
+      }
+    ]
+  },
+  {
+    "game_id": "8264549f",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Shantung to Anhwe.",
+          "Move infantry from Jehol to Chahar.",
+          "Use tactical bombers from Manchuria to support attacks on Anhwe and Chahar.",
+          "Deploy fighters from Korea to support ground operations in Anhwe and Chahar.",
+          "Purchase additional infantry to reinforce coastal territories."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zone (Chahar, Anhwe, Hunan, Yunan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased a total of 6 units: 1 Transport, 1 Armour, 1 Artillery, and 3 Infantry for a total of 26 PUs. Key troop movements included the auto-placement of the Transport in 6 Sea Zone and the Armour, Artillery, and Infantry in Japan, enhancing both offensive and defensive capabilities for future operations. No territories were attacked or captured during this round, and the IPC total remained unchanged.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 tactical bomber, 1 destroyer, 2 artillery, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. The turn concluded with the auto-placement of new units in Japan and 6 Sea Zone, maintaining Japan's strategic positioning and IPC stability.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 1 tactical bomber, 2 artillery, and 4 infantry. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The auto-placement phase saw the new units positioned in Japan and 6 Sea Zone, maintaining Japan's strategic presence in the region.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 1 tactical bomber, 2 armor, 2 artillery, and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not specify any territories attacked or captured. The turn concluded with the auto-placement of the purchased units in Japan, bolstering its military presence.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 2 armoured units, 2 artillery units, and 2 infantry units, spending a total of 26 PUs. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The troop movements and purchases were strategically aimed at enhancing ground force presence and maximizing transport efficiency for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6, the nation successfully completed its political and purchase phases, acquiring 2 transports, 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the battles, Japan auto-placed 2 transports in the 6 Sea Zone and reinforced Japan with 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor, maintaining its strategic position in the Pacific."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Once at war with the British, attack Kwangtung using forces from Kiangsi and Kwangsi.",
+          "Move infantry and artillery from Kwangsi to French Indo China after capturing Kwangtung.",
+          "Use naval support from 20 Sea Zone to assist in capturing Kwangtung.",
+          "Purchase transports to facilitate troop movements to French Indo China."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased a total of 6 units: 1 Transport, 1 Armour, 1 Artillery, and 3 Infantry for a total of 26 PUs. Key troop movements included the auto-placement of the Transport in 6 Sea Zone and the Armour, Artillery, and Infantry in Japan, enhancing both offensive and defensive capabilities for future operations. No territories were attacked or captured during this round, and the IPC total remained unchanged.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 tactical bomber, 1 destroyer, 2 artillery, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. The turn concluded with the auto-placement of new units in Japan and 6 Sea Zone, maintaining Japan's strategic positioning and IPC stability.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 1 tactical bomber, 2 artillery, and 4 infantry. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The auto-placement phase saw the new units positioned in Japan and 6 Sea Zone, maintaining Japan's strategic presence in the region.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 1 tactical bomber, 2 armor, 2 artillery, and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not specify any territories attacked or captured. The turn concluded with the auto-placement of the purchased units in Japan, bolstering its military presence.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 2 armoured units, 2 artillery units, and 2 infantry units, spending a total of 26 PUs. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The troop movements and purchases were strategically aimed at enhancing ground force presence and maximizing transport efficiency for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6, the nation successfully completed its political and purchase phases, acquiring 2 transports, 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the battles, Japan auto-placed 2 transports in the 6 Sea Zone and reinforced Japan with 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor, maintaining its strategic position in the Pacific."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone.",
+          "Purchase additional transports and ground units to support the India campaign."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased a total of 6 units: 1 Transport, 1 Armour, 1 Artillery, and 3 Infantry for a total of 26 PUs. Key troop movements included the auto-placement of the Transport in 6 Sea Zone and the Armour, Artillery, and Infantry in Japan, enhancing both offensive and defensive capabilities for future operations. No territories were attacked or captured during this round, and the IPC total remained unchanged.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 tactical bomber, 1 destroyer, 2 artillery, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. The turn concluded with the auto-placement of new units in Japan and 6 Sea Zone, maintaining Japan's strategic positioning and IPC stability.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 1 tactical bomber, 2 artillery, and 4 infantry. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The auto-placement phase saw the new units positioned in Japan and 6 Sea Zone, maintaining Japan's strategic presence in the region.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 1 tactical bomber, 2 armor, 2 artillery, and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not specify any territories attacked or captured. The turn concluded with the auto-placement of the purchased units in Japan, bolstering its military presence.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 2 armoured units, 2 artillery units, and 2 infantry units, spending a total of 26 PUs. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The troop movements and purchases were strategically aimed at enhancing ground force presence and maximizing transport efficiency for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6, the nation successfully completed its political and purchase phases, acquiring 2 transports, 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the battles, Japan auto-placed 2 transports in the 6 Sea Zone and reinforced Japan with 4 infantry, 2 artillery, 1 tactical bomber, and 1 armor, maintaining its strategic position in the Pacific."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not control all Chinese coastal provinces and their buffer zones by round 3. The progress logs do not specify any territories captured, indicating a lack of territorial gains in the targeted areas.",
+        "failure_chain": "Failed to control Chinese coastal provinces by round 3 ← No specific battles or territorial gains reported in progress logs ← Insufficient focus on attacking and capturing key territories like Anhwe and Chahar ← Tactical bombers and fighters were not effectively utilized to support ground operations.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Lack of specific attacks on targeted territories like Anhwe and Chahar, and ineffective use of air support to assist ground operations.",
+        "lesson": "When aiming to secure Chinese coastal provinces, ensure specific attacks on key territories like Anhwe and Chahar are executed by round 3, supported by tactical bombers and fighters for effective ground operations.",
+        "national_strategy_update": "Add prerequisite action: Execute specific attacks on Anhwe and Chahar by round 3 with air support."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Japan did not control French Indo China by round 5, and there is no indication of Kwangtung being captured. The progress logs lack details on specific territorial gains.",
+        "failure_chain": "Failed to capture French Indo China by round 5 ← Kwangtung was not captured as a prerequisite ← Lack of detailed combat actions in progress logs ← Forces from Kiangsi and Kwangsi were not effectively utilized to attack Kwangtung.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Failure to execute planned attacks on Kwangtung using forces from Kiangsi and Kwangsi, and lack of naval support from 20 Sea Zone.",
+        "lesson": "Ensure Kwangtung is captured by round 3 using forces from Kiangsi and Kwangsi, supported by naval units from 20 Sea Zone, to facilitate the subsequent capture of French Indo China.",
+        "national_strategy_update": "Add prerequisite action: Capture Kwangtung by round 3 using forces from Kiangsi and Kwangsi with naval support."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture India by round 6. There is no indication of significant progress toward staging an attack on India, as French Indo China was not controlled.",
+        "failure_chain": "Failed to stage attack on India by round 6 ← French Indo China was not controlled as a staging area ← Kwangtung was not captured, blocking the path to French Indo China.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Inability to control French Indo China due to failure in capturing Kwangtung, which is essential for staging the India campaign.",
+        "lesson": "Ensure control of French Indo China by round 5 as a staging area for India, requiring prior capture of Kwangtung by round 3.",
+        "national_strategy_update": "Add prerequisite action: Control French Indo China by round 5 for India campaign, with Kwangtung captured by round 3."
+      }
+    ]
+  },
+  {
+    "game_id": "e047a4bc",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Shantung to Anhwe to prepare for further inland push.",
+          "Use tactical bombers and fighters from Kiangsu and Korea to support attacks on Anhwe and Hunan.",
+          "Deploy infantry from Kwangsi to Hunan to secure the buffer zone.",
+          "Reinforce Kiangsi with units from Kiangsu to maintain pressure on Chinese forces."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zone (Chahar, Anhwe, Hunan, Yunnan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 tanks and 4 infantry for a total of 20 IPCs spent. During the combat phase, Japan engaged in three battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan executed non-combat movements and auto-placed 2 armor and 4 infantry in Japan, solidifying their position for future rounds.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 IPCs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, reinforcing their ground forces for future operations.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 8 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this turn. The auto-placement of the new units occurred in Japan, bolstering its forces without any IPC changes reported.",
+          "Round 4: Round 4: In Round 4, Japan successfully completed its political phase and purchased 2 Armoured units and 8 Infantry for a total cost of 36 PUs, leaving them with 1 PU. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, the newly purchased units were auto-placed in Japan, bolstering their ground forces for future operations.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its purchase phase by acquiring 2 armour and 5 infantry for a total cost of 27 PUs, leaving 1 PU remaining. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed. Following the battles, the newly purchased units were auto-placed in Japan, reinforcing the mainland's defenses and preparing for future operations.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 5 infantry. During the combat and non-combat movement phases, Japan executed troop movements but did not capture any new territories. The turn ended with the auto-placement of the newly purchased units in Japan, maintaining their IPC total without any changes."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Once at war with the British, attack Kwangtung using forces from Kiangsi and Kwangsi.",
+          "Move additional infantry and artillery from Siam to French Indo China once Kwangtung is secured.",
+          "Purchase additional transports to facilitate troop movements from Japan to the mainland."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 tanks and 4 infantry for a total of 20 IPCs spent. During the combat phase, Japan engaged in three battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan executed non-combat movements and auto-placed 2 armor and 4 infantry in Japan, solidifying their position for future rounds.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 IPCs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, reinforcing their ground forces for future operations.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 8 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this turn. The auto-placement of the new units occurred in Japan, bolstering its forces without any IPC changes reported.",
+          "Round 4: Round 4: In Round 4, Japan successfully completed its political phase and purchased 2 Armoured units and 8 Infantry for a total cost of 36 PUs, leaving them with 1 PU. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, the newly purchased units were auto-placed in Japan, bolstering their ground forces for future operations.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its purchase phase by acquiring 2 armour and 5 infantry for a total cost of 27 PUs, leaving 1 PU remaining. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed. Following the battles, the newly purchased units were auto-placed in Japan, reinforcing the mainland's defenses and preparing for future operations.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 5 infantry. During the combat and non-combat movement phases, Japan executed troop movements but did not capture any new territories. The turn ended with the auto-placement of the newly purchased units in Japan, maintaining their IPC total without any changes."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone.",
+          "Purchase additional ground units to reinforce the push towards India."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 tanks and 4 infantry for a total of 20 IPCs spent. During the combat phase, Japan engaged in three battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan executed non-combat movements and auto-placed 2 armor and 4 infantry in Japan, solidifying their position for future rounds.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 IPCs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, reinforcing their ground forces for future operations.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 8 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this turn. The auto-placement of the new units occurred in Japan, bolstering its forces without any IPC changes reported.",
+          "Round 4: Round 4: In Round 4, Japan successfully completed its political phase and purchased 2 Armoured units and 8 Infantry for a total cost of 36 PUs, leaving them with 1 PU. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, the newly purchased units were auto-placed in Japan, bolstering their ground forces for future operations.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its purchase phase by acquiring 2 armour and 5 infantry for a total cost of 27 PUs, leaving 1 PU remaining. The combat phase involved resolving 2 battles, although specific territories attacked or captured were not detailed. Following the battles, the newly purchased units were auto-placed in Japan, reinforcing the mainland's defenses and preparing for future operations.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 5 infantry. During the combat and non-combat movement phases, Japan executed troop movements but did not capture any new territories. The turn ended with the auto-placement of the newly purchased units in Japan, maintaining their IPC total without any changes."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not control all Chinese coastal provinces and their buffer zones by round 3. No specific territories were captured, and the expected compression of Chinese forces westward did not occur.",
+        "failure_chain": "Failed to control Chinese coastal provinces by round 3 ← No territories were captured in rounds 1-3 ← Insufficient combat engagements and force allocation to coastal provinces ← Focus was on reinforcing Japan rather than executing planned attacks.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan failed due to insufficient combat engagements and force allocation to the coastal provinces. The focus was on reinforcing Japan rather than executing planned attacks on the Chinese coast.",
+        "lesson": "When aiming to secure the Chinese coast, prioritize combat engagements in coastal provinces early (rounds 1-3) to compress Chinese forces westward. Allocate sufficient forces to these provinces rather than focusing solely on reinforcing Japan.",
+        "national_strategy_update": "Add a prerequisite to prioritize combat engagements in Chinese coastal provinces in the early rounds (1-3) to ensure compression of Chinese forces westward."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Japan did not control French Indo China by round 5, and no staging area was established for the India push. No territories were captured, and the necessary troop movements did not occur.",
+        "failure_chain": "Failed to control French Indo China by round 5 ← Kwangtung was not captured ← No attacks on Kwangtung were executed ← Forces were not moved from Kiangsi and Kwangsi as planned.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan failed due to a lack of execution in attacking Kwangtung and moving forces from Kiangsi and Kwangsi. The necessary troop movements and attacks were not carried out as planned.",
+        "lesson": "Ensure that forces are moved from Kiangsi and Kwangsi to attack Kwangtung early. This is critical for establishing a staging area in French Indo China for further operations.",
+        "national_strategy_update": "Add a specific action to prioritize the movement of forces from Kiangsi and Kwangsi to Kwangtung in the early rounds to ensure control of French Indo China by round 5."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "India was not captured by round 6, and no significant progress was made towards establishing a staging area in French Indo China/Burma. No territories were captured, and the necessary troop accumulation did not occur.",
+        "failure_chain": "Failed to capture India by round 6 ← No staging area established in French Indo China/Burma ← French Indo China was not captured ← Kwangtung was not attacked or captured.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan failed due to the lack of a staging area in French Indo China/Burma, which was a result of not capturing Kwangtung. The necessary troop movements and attacks were not executed as planned.",
+        "lesson": "To capture India, ensure that a staging area is established in French Indo China/Burma by capturing Kwangtung early. This requires prioritizing attacks on Kwangtung and moving forces accordingly.",
+        "national_strategy_update": "Add a prerequisite to establish a staging area in French Indo China/Burma by capturing Kwangtung early to facilitate the push towards India."
+      }
+    ]
+  },
+  {
+    "game_id": "70ce43ea",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Shantung to Anhwe.",
+          "Move infantry from Jehol to Chahar to secure the buffer zone.",
+          "Use tactical bombers from Manchuria to support attacks on Chinese coastal provinces.",
+          "Reinforce Kiangsi with infantry from Kwangsi to prepare for further inland pushes."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zone (Chahar, Anhwe, Hunan, Yunnan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the non-combat movements, Japan auto-placed the newly purchased units in Japan, bolstering its forces for future engagements.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and executed combat and non-combat movements without any reported issues. Japan did not capture any new territories this round, and specific details on units purchased and IPC changes were not provided due to an error in the game log. Key troop movements included strategic positioning of forces, but exact numbers and territories involved were not specified.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 transports, 3 armoured units, and 15 infantry, which were auto-placed in Japan. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The overall IPC changes were not specified, but the troop movements included the addition of new units to bolster Japan's military presence.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 PUs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, enhancing Japan's ground and naval capabilities for future offensives.",
+          "Round 5: Round 5: In Japan's Round 5, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territories attacked or captured were not detailed. Key troop movements included the placement of the new transport in Sea Zone 6 and the addition of 2 armor and 3 infantry to Japan, resulting in a stable IPC count.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase ended successfully, but no units were purchased due to a lack of resources. During the combat and non-combat movement phases, Japan did not engage in any attacks or troop movements, resulting in no changes to territories or IPCs. Consequently, the turn ended without any new units placed or significant strategic advancements."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Once at war with the British, attack Kwangtung using forces from Kiangsi and Kwangsi.",
+          "Move additional infantry and artillery from Japan to Kwangsi via transport to reinforce the attack on French Indo China.",
+          "Prepare to attack French Indo China after securing Kwangtung."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the non-combat movements, Japan auto-placed the newly purchased units in Japan, bolstering its forces for future engagements.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and executed combat and non-combat movements without any reported issues. Japan did not capture any new territories this round, and specific details on units purchased and IPC changes were not provided due to an error in the game log. Key troop movements included strategic positioning of forces, but exact numbers and territories involved were not specified.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 transports, 3 armoured units, and 15 infantry, which were auto-placed in Japan. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The overall IPC changes were not specified, but the troop movements included the addition of new units to bolster Japan's military presence.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 PUs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, enhancing Japan's ground and naval capabilities for future offensives.",
+          "Round 5: Round 5: In Japan's Round 5, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territories attacked or captured were not detailed. Key troop movements included the placement of the new transport in Sea Zone 6 and the addition of 2 armor and 3 infantry to Japan, resulting in a stable IPC count.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase ended successfully, but no units were purchased due to a lack of resources. During the combat and non-combat movement phases, Japan did not engage in any attacks or troop movements, resulting in no changes to territories or IPCs. Consequently, the turn ended without any new units placed or significant strategic advancements."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following the non-combat movements, Japan auto-placed the newly purchased units in Japan, bolstering its forces for future engagements.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and executed combat and non-combat movements without any reported issues. Japan did not capture any new territories this round, and specific details on units purchased and IPC changes were not provided due to an error in the game log. Key troop movements included strategic positioning of forces, but exact numbers and territories involved were not specified.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 transports, 3 armoured units, and 15 infantry, which were auto-placed in Japan. During the combat phase, Japan resolved 2 battles, although specific territories attacked or captured were not detailed in the log. The overall IPC changes were not specified, but the troop movements included the addition of new units to bolster Japan's military presence.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political phase and purchased 1 Transport, 2 Armour, and 7 Infantry for a total of 40 PUs. The combat phase involved two battles, although specific territories attacked or captured were not detailed in the log. Key troop movements included the auto-placement of 1 Transport in 6 Sea Zone, 2 Armour, and 7 Infantry in Japan, enhancing Japan's ground and naval capabilities for future offensives.",
+          "Round 5: Round 5: In Japan's Round 5, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat phase, Japan engaged in one battle, although the specific territories attacked or captured were not detailed. Key troop movements included the placement of the new transport in Sea Zone 6 and the addition of 2 armor and 3 infantry to Japan, resulting in a stable IPC count.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase ended successfully, but no units were purchased due to a lack of resources. During the combat and non-combat movement phases, Japan did not engage in any attacks or troop movements, resulting in no changes to territories or IPCs. Consequently, the turn ended without any new units placed or significant strategic advancements."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not control all Chinese coastal provinces and their buffer zones by round 3. The game logs indicate no specific territories were captured, and no significant troop movements were made to secure these areas.",
+        "failure_chain": "Failed to control Chinese coastal provinces by round 3 ← No specific battles or captures reported in rounds 1-3 ← Insufficient force allocation and lack of detailed battle plans for coastal provinces.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Lack of specific combat engagements and insufficient force allocation to coastal provinces in the early rounds.",
+        "lesson": "When aiming to secure the Chinese coast, ensure detailed battle plans and sufficient force allocation to each targeted province by round 1. Prioritize capturing key buffer zones like Chahar and Anhwe early to compress Chinese forces westward.",
+        "national_strategy_update": "Add detailed battle plans for each coastal province in the strategy document. Emphasize early force allocation to buffer zones like Chahar and Anhwe."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture Kwangtung or French Indo China by round 5. No specific battles or captures were reported in the logs, indicating a lack of progress toward this strategic goal.",
+        "failure_chain": "Failed to capture French Indo China by round 5 ← Kwangtung was not taken ← No reported battles or troop movements toward Kwangtung in early rounds.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Failure to initiate combat operations against Kwangtung in the early rounds, leading to a stalled advance toward French Indo China.",
+        "lesson": "To capture Kwangtung and FIC, initiate combat operations against Kwangtung by round 2. Ensure sufficient forces are staged in Kiangsi and Kwangsi for a successful assault.",
+        "national_strategy_update": "Add 'Initiate Kwangtung assault by round 2' as a prerequisite action. Ensure force staging in Kiangsi and Kwangsi is prioritized in early rounds."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture India by round 6. No significant troop movements or battles were reported toward the India campaign, indicating a lack of preparation and execution.",
+        "failure_chain": "Failed to capture India by round 6 ← No staging of ground units in French Indo China/Burma ← Kwangtung and FIC were not captured, blocking the land route.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Lack of progress in capturing prerequisite territories (Kwangtung and FIC) prevented staging for the India campaign.",
+        "lesson": "Ensure prerequisite territories (Kwangtung and FIC) are captured by round 5 to allow staging for the India campaign. Coordinate amphibious and land assaults with sufficient ground and air support.",
+        "national_strategy_update": "Add 'Capture Kwangtung and FIC by round 5' as a prerequisite for the India campaign. Emphasize coordination of amphibious and land assaults with air support."
+      }
+    ]
+  },
+  {
+    "game_id": "3f985f1b",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Shantung to Anhwe.",
+          "Move infantry from Jehol to Chahar.",
+          "Use tactical bombers from Manchuria to support attacks on Anhwe and Chahar.",
+          "Reinforce Kiangsi with infantry from Kwangsi to prepare for a push into Hunan."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zones (Chahar, Anhwe, Hunan, Yunnan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 tanks and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. At the end of the turn, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor, 5 infantry, and 1 transport. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the new units in Japan and the transport in Sea Zone 6. This round resulted in no IPC changes as no territories were contested or captured.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armor, and 4 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat phase, Japan executed its combat and non-combat moves without any specific territories attacked or captured noted in the log. The overall IPC changes were not detailed, but the successful completion of all phases indicates a strategic consolidation of forces in preparation for future engagements.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 2 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The overall IPC changes were not specified, but the reinforcement of ground and naval units positions Japan for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the newly purchased units by auto-placing 1 transport in Sea Zone 6 and 2 armor and 3 infantry in Japan. The IPC changes were not specified, but the successful phases indicate a stable position for Japan moving forward."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Prepare to attack Kwangtung once at war with British.",
+          "Move infantry and artillery from Kwangsi to the border with Kwangtung.",
+          "Use transport in 20 Sea Zone to move additional units to Kwangtung once war is declared.",
+          "After capturing Kwangtung, prepare to move into French Indo China."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 tanks and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. At the end of the turn, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor, 5 infantry, and 1 transport. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the new units in Japan and the transport in Sea Zone 6. This round resulted in no IPC changes as no territories were contested or captured.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armor, and 4 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat phase, Japan executed its combat and non-combat moves without any specific territories attacked or captured noted in the log. The overall IPC changes were not detailed, but the successful completion of all phases indicates a strategic consolidation of forces in preparation for future engagements.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 2 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The overall IPC changes were not specified, but the reinforcement of ground and naval units positions Japan for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the newly purchased units by auto-placing 1 transport in Sea Zone 6 and 2 armor and 3 infantry in Japan. The IPC changes were not specified, but the successful phases indicate a stable position for Japan moving forward."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 tanks and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. At the end of the turn, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor, 5 infantry, and 1 transport. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the new units in Japan and the transport in Sea Zone 6. This round resulted in no IPC changes as no territories were contested or captured.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armor, and 4 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat phase, Japan executed its combat and non-combat moves without any specific territories attacked or captured noted in the log. The overall IPC changes were not detailed, but the successful completion of all phases indicates a strategic consolidation of forces in preparation for future engagements.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 2 infantry, which were auto-placed in Japan and 6 Sea Zone. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The overall IPC changes were not specified, but the reinforcement of ground and naval units positions Japan for future offensives.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 2 armor, and 3 infantry. During the combat and non-combat moves, Japan did not attack or capture any territories, but it strategically placed the newly purchased units by auto-placing 1 transport in Sea Zone 6 and 2 armor and 3 infantry in Japan. The IPC changes were not specified, but the successful phases indicate a stable position for Japan moving forward."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture any Chinese coastal provinces or buffer zones by round 3. No territories were captured throughout rounds 1-6.",
+        "failure_chain": "Failed to control Chinese coastal provinces by round 3 ← No attacks were launched on Chinese territories ← Forces were not allocated to the Chinese front ← Focus remained on building up forces in Japan without engaging.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan was not executed as no combat moves were made towards Chinese territories. The focus was on building forces rather than engaging in combat to secure the coast.",
+        "lesson": "To secure the Chinese coast, initiate combat moves by round 2 with sufficient forces (at least 3 infantry and 2 artillery) to ensure control of key territories like Anhwe and Chahar.",
+        "national_strategy_update": "Add 'Initiate combat moves by round 2' as a requirement for sp_secure_chinese_coast."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture Kwangtung or French Indo China by round 5. No territories were captured throughout rounds 1-6.",
+        "failure_chain": "Failed to capture Kwangtung by round 5 ← No declaration of war on British forces ← No movement of troops towards Kwangtung ← Focus remained on reinforcing Japan rather than advancing.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan was not executed as no declaration of war was made on British forces, and no troops were moved towards Kwangtung to initiate the attack.",
+        "lesson": "To capture Kwangtung, declare war on British forces by round 3 and move at least 4 infantry and 2 artillery to the border by round 4.",
+        "national_strategy_update": "Add 'Declare war on British by round 3' as a requirement for sp_capture_kwangtung_fic."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture India or stage any units in French Indo China/Burma by round 6. No territories were captured throughout rounds 1-6.",
+        "failure_chain": "Failed to stage units in French Indo China by round 6 ← No capture of Kwangtung or FIC ← No declaration of war on British forces ← Focus remained on reinforcing Japan rather than advancing towards India.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan was not executed as no declaration of war was made on British forces, and no troops were moved towards French Indo China to stage for the India campaign.",
+        "lesson": "To capture India, ensure Kwangtung and FIC are captured by round 5, with at least 6 ground units staged in FIC/Burma by round 6.",
+        "national_strategy_update": "Add 'Capture Kwangtung and FIC by round 5' as a prerequisite for sp_capture_india."
+      }
+    ]
+  },
+  {
+    "game_id": "598361ea",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast and Inland Buffer",
+        "reason": "Controlling the Chinese coast (Kiangsu, Kiangsi, Kwangsi) and adjacent buffer (Hunan, Yunnan, Anhwe, Chahar) gives Japan IPCs, a safe land corridor to Southeast Asia, and compresses Chinese forces away from the coast, enabling later pushes toward Burma and India.",
+        "actions": [
+          "Round 1: From Manchuria/Jehol/Shantung/Kiangsu/Kiangsi/Kwangsi, launch coordinated attacks to eliminate Chinese in Hunan, Kweichow, and Yunnan if odds are favourable, prioritizing Hunan and Yunnan to break the Chinese southern line.",
+          "Round 1: Use fighters and tactical_bombers from Japan, Korea, Manchuria, Kiangsu, and Formosa to support key land battles (Hunan, Yunnan, Kweichow) while keeping at least 2 fighters in range to defend the main fleet in 6 Sea Zone.",
+          "Round 1-2 Purchases: Emphasize 1-2 transports and 3-5 ground units (infantry/artillery) in Japan to sustain a steady flow of reinforcements to China and Southeast Asia.",
+          "Round 2: Finish off remaining Chinese pockets in Hunan/Kweichow/Yunnan and push into Anhwe/Chahar as needed to complete the buffer, avoiding deep pushes into Szechwan/Shensi/Suiyuan unless tactically necessary.",
+          "Maintain at least 6-8 ground units along the Kiangsu–Kiangsi–Kwangsi line to deter Chinese counterattacks and protect staging for the southern drive."
+        ],
+        "expected_outcome": "By end of Round 3, Japan controls all Chinese coastal territories (Kiangsu, Kiangsi, Kwangsi, Shantung) and the key inland buffer of Hunan, Yunnan, and Anhwe, with Chinese forces compressed to Szechwan/Shensi/Suiyuan and unable to threaten the coast.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry. During the combat move, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. Following the battle, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its strategic position and preparing for future offensives.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, while also placing 1 transport in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this round. The overall IPC count remained unchanged as no territories were gained or lost.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully resolved 8 battles, although specific territories attacked or captured were not detailed in the log. Japan purchased 2 transports, 2 armor, and 4 infantry, which were auto-placed in 6 Sea Zone and Japan, respectively. The overall IPC changes were not specified, but the successful completion of all phases indicates a strategic consolidation of forces.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 infantry, 2 armor, and 1 transport. During the combat phase, Japan engaged in 4 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan auto-placed the new units in Japan and the 6 Sea Zone, maintaining its strategic position while managing its IPC effectively.",
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_prepare_kwangtung_fic",
+        "name": "Prepare for Capture of Kwangtung and French Indo China",
+        "reason": "Kwangtung and French Indo China are the land bridge to Burma and India. Early preparation ensures a timely southern offensive once Japan is at war with the UK, preventing India from becoming an impregnable fortress.",
+        "actions": [
+          "Round 1 Purchases: Buy at least 1 additional transport (preferably 2 total new transports this round if PUs allow) and 3-4 ground units in Japan to ensure sufficient lift capacity for a southern push.",
+          "Round 1: Concentrate the main fleet in 6 Sea Zone or reposition elements toward 20/36 Sea Zones while keeping it safe from Allied counterattacks, ensuring naval cover for future landings on Kwangtung and French Indo China.",
+          "Round 1-2: Move infantry and artillery from Japan, Korea, and Manchuria toward coastal staging points (Kiangsu, Kiangsi, Kwangsi) so they can be loaded quickly once war with the UK begins.",
+          "Round 2-3: Once politically allowed to attack the UK, conduct an amphibious assault on Kwangtung from 20 Sea Zone using transports loaded from Kiangsi/Kwangsi/Japan, with air support from Formosa, Kiangsu, and carriers.",
+          "Immediately after securing Kwangtung, shift transports and ground units to take French Indo China from Kwangsi/Siam, using Siamese infantry as follow-up garrison."
+        ],
+        "expected_outcome": "By end of Round 4, Japan has captured Kwangtung and French Indo China, with at least 5 ground units (infantry/artillery/mech_infantry/armour) stationed in French Indo China and Siam as a staging area toward Burma and India.",
+        "target_round": 4,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry. During the combat move, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. Following the battle, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its strategic position and preparing for future offensives.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, while also placing 1 transport in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this round. The overall IPC count remained unchanged as no territories were gained or lost.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully resolved 8 battles, although specific territories attacked or captured were not detailed in the log. Japan purchased 2 transports, 2 armor, and 4 infantry, which were auto-placed in 6 Sea Zone and Japan, respectively. The overall IPC changes were not specified, but the successful completion of all phases indicates a strategic consolidation of forces.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 infantry, 2 armor, and 1 transport. During the combat phase, Japan engaged in 4 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan auto-placed the new units in Japan and the 6 Sea Zone, maintaining its strategic position while managing its IPC effectively.",
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India and Cripple British Pacific",
+        "reason": "India is the British Pacific industrial hub. Its capture removes a major Allied production center, secures Japan’s western flank, and opens options into the Middle East and Africa while denying the Allies a key airbase and naval base.",
+        "actions": [
+          "Rounds 2-4: Build up a strong ground stack (6-10 units including infantry, artillery, and possibly armour/mech_infantry) in French Indo China and Siam, supported by fighters and tactical_bombers on nearby carriers or airbases.",
+          "Rounds 3-5: Use transports in 35/37 Sea Zones to shuttle reinforcements from Japan and China to French Indo China, Malaya, and Burma, ensuring a continuous flow of troops toward the Indian front.",
+          "Once French Indo China and Malaya are secure, advance into Burma with a combined-arms force supported by air units from carriers and mainland airbases, aiming to clear Burma in one decisive battle.",
+          "From Burma, launch a coordinated attack on India when odds are clearly favourable: at least 6-8 attacking ground units plus 4-6 supporting air units, while ensuring the Japanese fleet can cover the Bay of Bengal (39 Sea Zone) against Allied naval interference.",
+          "After capturing India, immediately land follow-up infantry and station fighters/tactical_bombers there to hold against any Allied counterattack from the Middle East or sea."
+        ],
+        "expected_outcome": "By end of Round 6-7, Japan has captured India and holds Burma, Malaya, French Indo China, and Kwangtung, with India functioning as a secure forward base and British Pacific production eliminated.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry. During the combat move, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. Following the battle, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its strategic position and preparing for future offensives.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, while also placing 1 transport in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this round. The overall IPC count remained unchanged as no territories were gained or lost.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully resolved 8 battles, although specific territories attacked or captured were not detailed in the log. Japan purchased 2 transports, 2 armor, and 4 infantry, which were auto-placed in 6 Sea Zone and Japan, respectively. The overall IPC changes were not specified, but the successful completion of all phases indicates a strategic consolidation of forces.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 infantry, 2 armor, and 1 transport. During the combat phase, Japan engaged in 4 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan auto-placed the new units in Japan and the 6 Sea Zone, maintaining its strategic position while managing its IPC effectively.",
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_secure_home_fleet",
+        "name": "Secure Home Islands and Central Pacific Fleet Position",
+        "reason": "Japan’s offensive plans depend on a safe, concentrated fleet. Losing carriers or transports early would cripple the China and India campaigns and invite Allied counterattacks on the home islands and key staging areas.",
+        "actions": [
+          "Round 1: Keep the main fleet concentrated in 6 Sea Zone or another safe sea zone out of range of overwhelming Allied air/naval strikes, while still projecting power toward China and the South Pacific.",
+          "Round 1 Purchases: Ensure at least one additional transport and consider a destroyer or submarine if Allied naval threats (US/ANZAC) are likely to contest nearby sea zones early.",
+          "Maintain at least 2-3 fighters and 1-2 tactical_bombers on carriers in the main fleet to provide strong air cover and strike capability against enemy ships.",
+          "Avoid overextending single carriers or small detachments into Allied air range (e.g., near the Philippines or Hawaii) without overwhelming force and air cover.",
+          "Use submarines and destroyers to screen the main fleet and threaten Allied shipping lanes, while always preserving enough naval strength to deter direct attacks on Japan and Korea."
+        ],
+        "expected_outcome": "Throughout Rounds 1-4, Japan maintains an intact, concentrated main fleet (2 carriers, 2 battleships, multiple escorts, and growing transport capacity) in the central-western Pacific (6/19/20 Sea Zones), ensuring secure reinforcement routes to China and Southeast Asia and deterring Allied aggression against the home islands.",
+        "target_round": 4,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 tanks and 4 infantry. During the combat move, Japan engaged in one battle, although the specific territory attacked was not detailed in the log. Following the battle, Japan auto-placed 2 armor and 4 infantry in Japan, maintaining its strategic position and preparing for future offensives.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, while also placing 1 transport in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this round. The overall IPC count remained unchanged as no territories were gained or lost.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully resolved 8 battles, although specific territories attacked or captured were not detailed in the log. Japan purchased 2 transports, 2 armor, and 4 infantry, which were auto-placed in 6 Sea Zone and Japan, respectively. The overall IPC changes were not specified, but the successful completion of all phases indicates a strategic consolidation of forces.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 infantry, 2 armor, and 1 transport. During the combat phase, Japan engaged in 4 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan auto-placed the new units in Japan and the 6 Sea Zone, maintaining its strategic position while managing its IPC effectively.",
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_r2_pressure_b",
+        "name": "Pressure Burma via Yunnan Corridor",
+        "reason": "Chinese/British stack alignment makes a north–south squeeze efficient",
+        "actions": [],
+        "expected_outcome": "(added at round 2 reassessment)",
+        "target_round": 5,
+        "status": "abandoned",
+        "progress": [
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, while also placing 1 transport in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not attack or capture any territories this round. The overall IPC count remained unchanged as no territories were gained or lost.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 3 armor and 4 infantry, along with 1 transport placed in Sea Zone 6. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The total IPCs remained unchanged as no territories were attacked or captured."
+        ]
+      },
+      {
+        "plan_id": "sp_r4_sp_r4_sout",
+        "name": "sp_r4_south_axis_burma",
+        "reason": "",
+        "actions": [],
+        "expected_outcome": "(added at round 4 reassessment)",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the nation successfully resolved 8 battles, although specific territories attacked or captured were not detailed in the log. Japan purchased 2 transports, 2 armor, and 4 infantry, which were auto-placed in 6 Sea Zone and Japan, respectively. The overall IPC changes were not specified, but the successful completion of all phases indicates a strategic consolidation of forces.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 2 infantry, 2 armor, and 1 transport. During the combat phase, Japan engaged in 4 battles, although specific territories attacked or captured were not detailed in the log. Following the battles, Japan auto-placed the new units in Japan and the 6 Sea Zone, maintaining its strategic position while managing its IPC effectively.",
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_r6_sp_pacific",
+        "name": "sp_pacific_pressure_ANZAC",
+        "reason": "",
+        "actions": [],
+        "expected_outcome": "(added at round 6 reassessment)",
+        "target_round": 9,
+        "status": "active",
+        "progress": [
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      },
+      {
+        "plan_id": "sp_r6_sp_air_sup",
+        "name": "sp_air_supremacy_india_front",
+        "reason": "",
+        "actions": [],
+        "expected_outcome": "(added at round 6 reassessment)",
+        "target_round": 9,
+        "status": "active",
+        "progress": [
+          "Round 6: Round 6: In Japan's Round 6, no territories were attacked or captured, but significant troop movements occurred as 2 infantry and 1 artillery were moved from Jehol to Shantung, and 8 infantry and 1 artillery were shifted from Shantung to Kiangsu, consolidating a major stack in Kiangsu. Additionally, 2 infantry and 1 armour were moved from Kiangsu to Kiangsi to reinforce the southern front toward Kwangtung. Japan auto-placed 1 transport in Sea Zone 6, along with 2 armour and 2 infantry in Japan, resulting in a net IPC change of +5 for the round."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast and Inland Buffer",
+        "achieved": false,
+        "actual_outcome": "By end of Round 6, Japan had a strong stack in Kiangsu and some reinforcement in Kiangsi, but there is no evidence that Hunan, Yunnan, or Anhwe were taken, nor that all Chinese coastal territories were secured. Rounds 2-3 saw no territorial gains, and the first major set of battles only occurred in Round 4. Chinese forces were not clearly compressed into the interior by Round 3 as planned.",
+        "failure_chain": "Expected outcome by Round 3: control Kiangsu, Kiangsi, Kwangsi, Shantung plus Hunan, Yunnan, Anhwe, with China pushed back to Szechwan/Shensi/Suiyuan.\n← Rounds 1-3: purchases focused on armour and only 1 transport, with minimal or unspecified land attacks; no explicit captures of Hunan/Yunnan/Anhwe are logged.\n← Round 1: instead of coordinated multi-territory attacks on Hunan/Kweichow/Yunnan with air support, Japan conducted only a single unspecified battle, leaving the Chinese southern line largely intact.\n← Rounds 2-3: Japan executed only \"strategic troop movements\" with no attacks or captures, allowing China to retain its interior and possibly reinforce.\n← Force allocation and timing prioritized building tanks in Japan over early infantry/artillery mass on the China front, delaying the inland buffer push beyond the Round 3 target window.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Japan did not launch the planned coordinated Round 1–2 offensives into Hunan and Yunnan, and instead delayed major land operations until Round 4, missing the timing window to secure the inland buffer by Round 3.",
+        "lesson": "For a China containment plan, Japan must attack Hunan and Yunnan no later than Round 2 with sufficient ground (3–4 infantry plus artillery) and air support from Japan/Korea/Manchuria. Skipping these early pushes and waiting until Round 4 allows China to maintain a viable interior and keeps the coastal buffer incomplete.",
+        "national_strategy_update": "Update sp_secure_chinese_coast: add explicit prerequisite actions: (1) Round 1: attack Hunan OR Yunnan if odds ≥ 65%; (2) Round 2: ensure at least one of Hunan/Yunnan is captured and reinforced with ≥ 4 ground units. Add known_risk: \"If Hunan and Yunnan are not taken by end of Round 2, compressing China by Round 3 becomes unlikely; de-prioritize India timetable accordingly.\""
+      },
+      {
+        "plan_id": "sp_prepare_kwangtung_fic",
+        "plan_name": "Prepare for Capture of Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "By end of Round 6, Kwangtung and French Indo China do not appear to be under Japanese control. The main ground mass is still in Kiangsu/Kiangsi, and transports are only just being organized in SZ 6 with infantry loaded but not yet moved forward. No amphibious assaults on Kwangtung or FIC are recorded by Round 4, the target date.",
+        "failure_chain": "Expected outcome by Round 4: Kwangtung and FIC captured, with ≥ 5 ground units in FIC/Siam as staging.\n← No logged amphibious assaults on Kwangtung or FIC in Rounds 2–4; first major battles are in Round 4 but not clearly against these targets.\n← Transports: only 1 new transport by Round 2 and 1 by Round 3; the main transport mass (2 more) arrives Round 4, and another in Rounds 5–6, so lift capacity for a strong early southern push was delayed.\n← Round 6 NCM shows 3 transports in SZ 6 with 6 infantry loaded but doctrine prevented optimal armour+infantry loading and forward movement to SZ 20; transports remained in SZ 6 instead of staging in SZ 20/36.\n← Ground units: many tanks and infantry were built in Japan but only gradually moved south; Kiangsu/Kiangsi stacks were still forming in Round 6, indicating that earlier rounds did not prioritize staging to Kwangsi/20 SZ.\n← Overall, the southern amphibious timetable slipped because transport purchases and forward positioning lagged behind the plan, and no decisive commitment to Kwangtung/FIC was made by Round 4.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Japan failed to purchase and forward-position enough transports by Rounds 1–2 and did not execute the planned Round 2–3 amphibious assault on Kwangtung, leaving the Kwangtung/FIC sequence unstarted by the Round 4 deadline.",
+        "lesson": "When planning an early Kwangtung/FIC push, Japan must have at least 3–4 transports in SZ 6 by end of Round 2 and must move them to SZ 20 with loaded ground units by Round 3. If transports are still in SZ 6 and not staged forward by Round 3, the Kwangtung/FIC timetable should be considered failed and the India plan delayed or revised.",
+        "national_strategy_update": "Update sp_prepare_kwangtung_fic: add quantitative milestones: (1) End Round 1: ≥ 2 transports in SZ 6; (2) End Round 2: ≥ 3 transports, with ≥ 4 ground units staged in Kiangsu/Kiangsi/Kwangsi; (3) Round 3: attempt Kwangtung assault if odds ≥ 70%. Add known_risk: \"If transports are not in SZ 20 by Round 3, FIC capture by Round 4 is unlikely; downgrade India capture plan confidence.\""
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India and Cripple British Pacific",
+        "achieved": false,
+        "actual_outcome": "By end of Round 6, India has not been attacked or captured. Kwangtung and FIC are not clearly in Japanese hands, and there is no established ground stack in FIC/Siam/Burma. Japanese forces are concentrated in Kiangsu/Kiangsi and on transports in SZ 6, indicating that the India offensive is still in its preparatory phase rather than approaching execution.",
+        "failure_chain": "Expected outcome: India captured by Round 6–7, with Kwangtung, FIC, Malaya, and Burma already secured.\n← By Round 6, Kwangtung and FIC are not confirmed captured; Burma and Malaya are not mentioned as Japanese holdings, so the land bridge to India is incomplete.\n← The planned ground stack of 6–10 units in FIC/Siam by Rounds 2–4 never materialized; instead, large forces remained in Kiangsu and only began moving south in Round 6.\n← Transport shuttling via SZ 35/37 never started; transports are still in SZ 6 with infantry loaded but not moved forward due to doctrine constraints and late staging.\n← The prerequisite plan (sp_prepare_kwangtung_fic) slipped: no early Kwangtung/FIC capture, so the India timetable lost its foundation.\n← Strategic focus and purchases emphasized armour in Japan without synchronizing transport capacity and forward staging, leaving offensive power stranded far from the India front within the 6-round window.",
+        "root_cause": "strategy_error",
+        "root_cause_detail": "The India capture plan assumed an aggressive early timetable (India by Round 6–7) without enforcing prerequisite milestones for Kwangtung/FIC/Burma and transport staging. When those prerequisites slipped in Rounds 2–4, the plan was not formally downgraded or delayed, leaving an unrealistic expectation of early India capture.",
+        "lesson": "India capture should be treated as a second-phase objective that only becomes active once Kwangtung and FIC are secured and a 6–10 unit stack exists in FIC/Siam. If Kwangtung and FIC are not both under Japanese control by end of Round 4, the target date for India must be pushed back and resources reallocated instead of continuing to assume a Round 6–7 capture.",
+        "national_strategy_update": "Update sp_capture_india: add explicit dependencies: (1) Kwangtung and FIC must be controlled by end of Round 4; (2) ≥ 6 ground units in FIC/Siam by end of Round 4; (3) ≥ 3 transports operating in SZ 35/37 by Round 5. Add rule: \"If these conditions are not met, automatically shift India target round to 8–9 and reduce plan confidence, freeing purchases for fleet defense or China.\""
+      },
+      {
+        "plan_id": "sp_secure_home_fleet",
+        "plan_name": "Secure Home Islands and Central Pacific Fleet Position",
+        "achieved": true,
+        "actual_outcome": "Throughout Rounds 1–6, Japan maintained a concentrated main fleet, with carriers, battleships, escorts, and growing transport capacity. The main fleet is reported in SZ 20 with carrier-based air, and SZ 6 holds multiple transports. There is no indication of major Japanese naval losses or Allied strikes on the home islands; Japan’s IPC income is stable or slightly increasing (+5 in Round 6).",
+        "failure_chain": "",
+        "root_cause": "execution_error",
+        "root_cause_detail": "N/A — the plan’s expected outcome (intact, concentrated fleet in central-western Pacific) was achieved. Minor execution friction occurred with transport doctrine (inability to move empty transports forward), but this did not compromise fleet safety.",
+        "lesson": "Keeping the main combat fleet concentrated in SZ 20 while using SZ 6 as a protected transport base effectively secures Japan’s reinforcement routes and deters Allied aggression. However, transport doctrine (requiring armour+infantry loading and forbidding empty forward moves) must be integrated into planning so that logistics do not lag behind fleet safety.",
+        "national_strategy_update": "For sp_secure_home_fleet, add a coordination note: \"When main fleet is in SZ 20, plan transport cycles so that loaded transports (1 armour + 1 infantry) move from SZ 6 to SZ 20 by noncombat, avoiding empty forward moves that doctrine forbids.\" Also add a success tag increasing confidence in concentrated-fleet posture around SZ 20 for early-mid game."
+      },
+      {
+        "plan_id": "sp_r4_sp_r4_sout",
+        "plan_name": "sp_r4_south_axis_burma",
+        "achieved": false,
+        "actual_outcome": "This late-added plan appears intended to push south toward Burma around Round 4. By Round 6, Japanese forces are still massed in Kiangsu/Kiangsi, with no explicit captures of Burma, FIC, or Malaya. The Burma axis has not been opened; instead, Japan is still in the staging phase on the China coast.",
+        "failure_chain": "Expected outcome (inferred): establish a southern axis through FIC/Siam toward Burma by Round 7.\n← By Round 6, no mention of Japanese control of FIC, Siam buildup, or any attack on Burma; the only detailed movements are north-China units shifting to Kiangsu/Kiangsi.\n← The prerequisite capture of Kwangtung/FIC (handled by sp_prepare_kwangtung_fic) did not occur by Round 4, so the Burma axis had no starting base.\n← Transport logistics remained behind schedule; transports were still in SZ 6 and not cycling through SZ 35/37 to land forces in Malaya/Burma.\n← Because this plan was added at Round 4, it inherited already-slipped prerequisites and had insufficient time and resources to establish a credible Burma thrust by Round 6.",
+        "root_cause": "strategy_error",
+        "root_cause_detail": "The Burma axis plan was activated in Round 4 without verifying that its prerequisites (Kwangtung/FIC capture and transport staging) were in place, making its Round 7 target unrealistic given the delayed southern expansion.",
+        "lesson": "New mid-game plans (like a Burma axis) must be conditioned on the current board state. If Kwangtung and FIC are not yet secured by the time the plan is proposed, the Burma timetable must be extended or the plan shelved, rather than assuming an idealized progression from Round 4 onward.",
+        "national_strategy_update": "Refine sp_r4_south_axis_burma: explicitly require that Kwangtung and FIC are controlled and that at least 2 transports can land units in FIC/Siam before the plan is activated. Add a rule: \"Do not instantiate this plan at Round 4 if FIC is still Allied-controlled; instead, reassess for a later Burma push or alternative objectives.\""
+      },
+      {
+        "plan_id": "sp_r6_sp_pacific",
+        "plan_name": "sp_pacific_pressure_ANZAC",
+        "achieved": false,
+        "actual_outcome": "This plan was only activated at Round 6, with no specific actions or outcomes yet. By Round 6, Japan’s main fleet is in SZ 20 and transports are still organizing in SZ 6; there is no evidence of pressure on ANZAC territories (e.g., New Guinea, Queensland, New South Wales). The plan is effectively in its infancy and has not produced results within the 6-round window.",
+        "failure_chain": "Expected outcome (inferred): increase pressure on ANZAC by Round 9.\n← Plan activated only at Round 6, leaving no time within the 6-round game window to execute meaningful operations.\n← Fleet and transports are positioned more for China/India staging (SZ 20 and SZ 6) than for a southward lunge toward ANZAC.\n← Earlier strategic focus on India/China left no dedicated resources for an ANZAC pressure line until very late, so this plan is more aspirational than actionable in the current timeframe.",
+        "root_cause": "strategy_error",
+        "root_cause_detail": "The ANZAC pressure plan was introduced too late relative to the game’s 6-round evaluation window and without dedicated resources or fleet repositioning, making it impossible to assess or achieve its goals in time.",
+        "lesson": "If ANZAC pressure is part of the overall Pacific strategy, it must be planned from the early game with explicit fleet and transport allocations (e.g., a carrier group and 1–2 transports earmarked for the south). Adding ANZAC pressure as a new plan in Round 6 without prior preparation will not yield results within a short horizon.",
+        "national_strategy_update": "Update sp_pacific_pressure_ANZAC: add an activation condition: \"Only instantiate this plan if, by Round 3, the main fleet or a detached task force can reach SZ 54/62 within 2 rounds and at least 1–2 transports are available for landings on ANZAC-adjacent islands.\" Also add a note that if India capture is the primary objective, ANZAC pressure should be secondary and only activated once India prerequisites are met."
+      },
+      {
+        "plan_id": "sp_r6_sp_air_sup",
+        "plan_name": "sp_air_supremacy_india_front",
+        "achieved": false,
+        "actual_outcome": "This air supremacy plan for the India front was activated at Round 6, but by that time Japan had not yet established a land front near India (no FIC/Burma control). Air units remained largely on carriers in SZ 20 or in Japan, with no redeployment toward an India-adjacent airbase. Thus, no air superiority over the India front was established within the 6-round window.",
+        "failure_chain": "Expected outcome (inferred): achieve air superiority over the India front by around Round 9.\n← By Round 6, there is no Japanese land presence in FIC/Burma/Malaya to host fighters and tactical bombers near India.\n← The India ground offensive (sp_capture_india) and southern staging (sp_prepare_kwangtung_fic) were behind schedule, so there was no defined \"India front\" to support.\n← Air units were not repositioned in Round 6; they remained on carriers in SZ 20 or in Japan, reflecting the lack of a concrete ground axis toward India.\n← The plan was added reactively at Round 6 rather than being integrated from earlier rounds with coordinated ground and naval movements.",
+        "root_cause": "strategy_error",
+        "root_cause_detail": "The air supremacy plan was activated without a corresponding ground front or forward bases near India, making its objectives unattainable in the short term and misaligned with the actual board position.",
+        "lesson": "Air supremacy plans must be tied to specific forward bases (e.g., FIC, Malaya, Burma) and activated only once those territories are secured or realistically within reach. Declaring an \"India front\" air plan while still fighting around Kiangsu/Kiangsi leads to misallocated planning with no actionable moves.",
+        "national_strategy_update": "Refine sp_air_supremacy_india_front: add prerequisites: (1) Japan controls at least one of FIC, Malaya, or Burma; (2) at least 4 fighters/tacs are available to redeploy within 1 round to that base. Until these are met, do not activate the plan; instead, keep air units under generic fleet/home defense plans."
+      }
+    ]
+  },
+  {
+    "game_id": "2da24473",
+    "result": "TIMEOUT - Capture India (Early Game Victory) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "name": "Secure Chinese Coast",
+        "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+        "actions": [
+          "Move infantry and artillery from Shantung to Anhwe to prepare for further inland push.",
+          "Use tactical bombers and fighters from Kiangsu and Korea to support attacks on Chinese territories.",
+          "Capture Anhwe, Hunan, and Yunnan by round 3 to establish control over the Chinese coast."
+        ],
+        "expected_outcome": "Control all Chinese coastal provinces and their buffer zone (Chahar, Anhwe, Hunan, Yunnan) by round 3.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 armor and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. The turn ended with Japan auto-placing the newly purchased units in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armoured units, and 4 infantry, which were auto-placed in Japan. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The IPC changes were not specified, but the successful phases indicate a strengthening of Japan's military presence in the region.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 4 armor and 5 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following troop movements, Japan auto-placed the newly purchased units in Japan, contributing to its military strength without any reported IPC changes.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 transports, 2 armor, and 4 infantry. During the combat phase, they engaged in one battle, although the specific territory attacked was not detailed. Key troop movements included the auto-placement of 2 transports in Sea Zone 6 and the addition of 2 armor and 4 infantry to Japan, contributing to their overall IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan auto-placing 1 transport in Sea Zone 6, 2 armor, and 2 infantry in Japan. No territories were attacked or captured during this turn, and the combat and non-combat movements were executed without incident. The IPC changes were not specified, but the successful placement of new units indicates a strengthening of Japan's military presence.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories. The auto-placement of the newly purchased units occurred in Japan, reinforcing its military presence without any IPC changes reported."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "name": "Capture Kwangtung and French Indo China",
+        "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
+        "actions": [
+          "Once at war with the British, attack Kwangtung using forces from Kiangsi and Kwangsi.",
+          "Move additional ground units to Kwangsi to prepare for the attack on French Indo China.",
+          "Capture French Indo China by round 5, with 5+ ground units staged for India push."
+        ],
+        "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 armor and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. The turn ended with Japan auto-placing the newly purchased units in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armoured units, and 4 infantry, which were auto-placed in Japan. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The IPC changes were not specified, but the successful phases indicate a strengthening of Japan's military presence in the region.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 4 armor and 5 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following troop movements, Japan auto-placed the newly purchased units in Japan, contributing to its military strength without any reported IPC changes.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 transports, 2 armor, and 4 infantry. During the combat phase, they engaged in one battle, although the specific territory attacked was not detailed. Key troop movements included the auto-placement of 2 transports in Sea Zone 6 and the addition of 2 armor and 4 infantry to Japan, contributing to their overall IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan auto-placing 1 transport in Sea Zone 6, 2 armor, and 2 infantry in Japan. No territories were attacked or captured during this turn, and the combat and non-combat movements were executed without incident. The IPC changes were not specified, but the successful placement of new units indicates a strengthening of Japan's military presence.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories. The auto-placement of the newly purchased units occurred in Japan, reinforcing its military presence without any IPC changes reported."
+        ]
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "name": "Capture India",
+        "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
+        "actions": [
+          "Accumulate 6+ ground units in French Indo China/Burma staging area.",
+          "Use fighters from carriers or nearby airbases for support.",
+          "Coordinate with amphibious landings via 35/37 Sea Zone."
+        ],
+        "expected_outcome": "Capture India, eliminating British Pacific industrial capacity by round 7.",
+        "target_round": 7,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Japan's Round 1 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan purchasing 2 armor and 4 infantry. During the combat move, Japan executed strategic troop movements but did not capture any new territories. The turn ended with Japan auto-placing the newly purchased units in Japan, maintaining its IPC total without any changes.",
+          "Round 2: Round 2: In Japan's Round 2 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 1 transport, 3 armoured units, and 4 infantry, which were auto-placed in Japan. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories this turn. The IPC changes were not specified, but the successful phases indicate a strengthening of Japan's military presence in the region.",
+          "Round 3: Round 3: In Japan's Round 3 of Axis & Allies Pacific 1940, the nation successfully completed its political and purchase phases, acquiring 4 armor and 5 infantry units. During the combat phase, Japan engaged in two battles, although the specific territories attacked were not detailed in the log. Following troop movements, Japan auto-placed the newly purchased units in Japan, contributing to its military strength without any reported IPC changes.",
+          "Round 4: Round 4: In Japan's Round 4 of Axis & Allies Pacific 1940, the Japanese successfully completed their political and purchase phases, acquiring 2 transports, 2 armor, and 4 infantry. During the combat phase, they engaged in one battle, although the specific territory attacked was not detailed. Key troop movements included the auto-placement of 2 transports in Sea Zone 6 and the addition of 2 armor and 4 infantry to Japan, contributing to their overall IPC changes.",
+          "Round 5: Round 5: In Japan's Round 5 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, with Japan auto-placing 1 transport in Sea Zone 6, 2 armor, and 2 infantry in Japan. No territories were attacked or captured during this turn, and the combat and non-combat movements were executed without incident. The IPC changes were not specified, but the successful placement of new units indicates a strengthening of Japan's military presence.",
+          "Round 6: Round 6: In Japan's Round 6 of Axis & Allies Pacific 1940, the political phase and purchase phase were completed successfully, resulting in the purchase of 2 armor and 4 infantry. During the combat and non-combat moves, Japan executed strategic troop movements but did not capture any new territories. The auto-placement of the newly purchased units occurred in Japan, reinforcing its military presence without any IPC changes reported."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_secure_chinese_coast",
+        "plan_name": "Secure Chinese Coast",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture any Chinese coastal provinces or their buffer zones by round 3. No territories were captured throughout rounds 1-6.",
+        "failure_chain": "Failed to capture Anhwe, Hunan, and Yunnan by round 3 ← No combat moves targeting these territories were executed ← Focus was on strengthening military presence in Japan rather than advancing into Chinese territories.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Lack of combat moves targeting Chinese coastal provinces and buffer zones. The plan was not executed as intended, with no attempts to capture the specified territories.",
+        "lesson": "When planning to secure the Chinese coast, ensure that combat moves are directed towards capturing Anhwe, Hunan, and Yunnan by round 3. Allocate sufficient forces to these territories early in the game.",
+        "national_strategy_update": "Add prerequisite: Allocate sufficient forces to Anhwe, Hunan, and Yunnan by round 2 to ensure capture by round 3."
+      },
+      {
+        "plan_id": "sp_capture_kwangtung_fic",
+        "plan_name": "Capture Kwangtung and French Indo China",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture Kwangtung or French Indo China by round 5. No territories were captured throughout rounds 1-6.",
+        "failure_chain": "Failed to capture French Indo China by round 5 ← Kwangtung was never attacked ← No forces were moved to Kwangsi to prepare for the attack on French Indo China.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "No strategic troop movements were made to position forces in Kwangsi for the attack on Kwangtung and French Indo China.",
+        "lesson": "Ensure strategic troop movements are made to position forces in Kwangsi by round 3 to prepare for the attack on Kwangtung and French Indo China.",
+        "national_strategy_update": "Add prerequisite: Move forces to Kwangsi by round 3 to prepare for the attack on Kwangtung and French Indo China."
+      },
+      {
+        "plan_id": "sp_capture_india",
+        "plan_name": "Capture India",
+        "achieved": false,
+        "actual_outcome": "Japan did not capture India by round 6. No territories were captured throughout rounds 1-6, and no ground units were staged in French Indo China/Burma.",
+        "failure_chain": "Failed to capture India by round 6 ← French Indo China was never captured ← No ground units were staged in French Indo China/Burma.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Lack of ground units staged in French Indo China/Burma due to failure to capture French Indo China.",
+        "lesson": "Ensure French Indo China is captured and ground units are staged there by round 5 to prepare for the India campaign.",
+        "national_strategy_update": "Add prerequisite: Capture French Indo China and stage ground units there by round 5 to prepare for the India campaign."
+      }
+    ]
   }
 ]

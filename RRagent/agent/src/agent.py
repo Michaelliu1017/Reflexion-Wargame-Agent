@@ -30,7 +30,7 @@ from display import (
 # Global configuration
 # ─────────────────────────────────────────────────────────────
 
-LLM_MODEL = "gpt-4o"
+LLM_MODEL = "gpt-4o" #gpt-5.1
 
 JAPAN_LOADING_ZONE = "6 Sea Zone"
 
@@ -253,6 +253,12 @@ load_dotenv()
 
 # 全局 bridge client 实例，所有工具共用这一个连接
 _client = TripleABridgeClient()
+
+# Purchase tracking for programmatic placement
+_last_purchase: list[dict] = []
+
+# Transport usage tracking per phase — counts how many transports were dispatched this NCM
+_transports_used_this_phase: int = 0
 
 
 # ─────────────────────────────────────────────────────────────
@@ -662,7 +668,7 @@ def compute_transport_capacity(state: dict) -> str:
 
         lines.append(
             f"  {terr_name}: {transport_count} transport(s) [{loaded_str}]"
-            f" — capacity {transport_count * 2} land unit slots{adj_str}"
+            f" — capacity {transport_count} heavy + {transport_count} light units{adj_str}"
         )
 
     return "\n".join(lines) if lines else "  No Japanese transports found in any sea zone."
@@ -798,6 +804,9 @@ def tool_buy_units(items_json: Any) -> str:
         except (json.JSONDecodeError, TypeError) as e:
             return json.dumps({"ok": False, "error": f"JSON parse error: {e}"})
     result = _client.act({"type": "BUY_UNITS", "items": items})
+    global _last_purchase
+    if result.get("ok"):
+        _last_purchase = list(items)
     return json.dumps(result, ensure_ascii=False)
 
 
@@ -835,10 +844,10 @@ def tool_transport_units(
       - Next NCM: call tool_move_units(transit_sz, land_territory, units_json) to land troops
         Then immediately call tool_move_units(transit_sz, "6 Sea Zone", transport) to return
 
-    Transport capacity (per transport): max 2 slots
-      - infantry / artillery / mech_infantry: 1 slot each
-      - armour (tank): 2 slots (fills entire transport)
-      Valid combos: 2 infantry | 1 inf + 1 art | 1 inf + 1 mech_inf | 1 armour
+    Transport capacity: 1 heavy + 1 light (max 1 heavy per transport)
+      Heavy units: armour, artillery, mech_infantry
+      Light units: infantry
+      Best combo: 1 armour + 1 infantry (max combat value per transport)
 
     load_from:  coastal territory where land units are (e.g. "Japan")
     load_sz:    sea zone with Japanese transport, adjacent to load_from (e.g. "6 Sea Zone")
@@ -858,6 +867,48 @@ def tool_transport_units(
 
     units = _normalize_units(units)
 
+    # Pre-check: is there an available (unused) transport at load_sz?
+    global _transports_used_this_phase
+    try:
+        _ubt_pre = _client.get_state().get("unitsByTerritory", {})
+        _sz_units = _ubt_pre.get(load_sz, {})
+        transports_here = _sz_units.get("transport", 0)
+        available = transports_here - _transports_used_this_phase
+        if transports_here == 0:
+            return json.dumps({
+                "ok": False,
+                "error": f"No transports at {load_sz}. Cannot load. STOP loading and call tool_end_turn().",
+            }, ensure_ascii=False)
+        if available <= 0:
+            return json.dumps({
+                "ok": False,
+                "error": (
+                    f"All {transports_here} transport(s) at {load_sz} already used this round "
+                    f"(movement exhausted). STOP loading and call tool_end_turn()."
+                ),
+            }, ensure_ascii=False)
+    except Exception:
+        pass
+
+    # Tank-first enforcement: if origin has tanks but load doesn't include one, reject
+    has_tank_in_load = any(u.get("unitType") == "armour" for u in units)
+    if not has_tank_in_load:
+        try:
+            _ubt = _client.get_state().get("unitsByTerritory", {})
+            _origin_units = _ubt.get(load_from, {})
+            tanks_available = _origin_units.get("armour", 0)
+            if tanks_available > 0:
+                return json.dumps({
+                    "ok": False,
+                    "error": (
+                        f"Blocked: {load_from} has {tanks_available} tank(s) available but you're loading infantry only. "
+                        f"Tanks have 3x the attack power of infantry — ALWAYS load 1 armour + 1 infantry per transport. "
+                        f'Fix: [{{"unitType":"armour","count":1}},{{"unitType":"infantry","count":1}}]'
+                    ),
+                }, ensure_ascii=False)
+        except Exception:
+            pass
+
     # Step A: load — move land units from coastal territory to adjacent sea zone
     r_load = _client.act_move(load_from, load_sz, units)
     if not r_load.get("ok", False):
@@ -865,7 +916,7 @@ def tool_transport_units(
             "ok": False,
             "error": f"Load failed: {r_load.get('error', 'unknown error')}",
             "step": "load",
-            "hint": f"Verify {load_sz} is adjacent to {load_from} and has a Japanese transport. Total slots ≤ 2.",
+            "hint": f"Verify {load_sz} is adjacent to {load_from} and has a Japanese transport. Max 1 heavy + 1 light per transport.",
         }, ensure_ascii=False)
 
     # Step B: transport move sea → sea
@@ -897,6 +948,17 @@ def tool_transport_units(
             "loaded_at": load_sz,
         }, ensure_ascii=False)
 
+    _transports_used_this_phase += 1
+
+    # Calculate remaining idle transports at load_sz
+    _remaining = 0
+    try:
+        _ubt_post = _client.get_state().get("unitsByTerritory", {})
+        _remaining = _ubt_post.get(load_sz, {}).get("transport", 0) - _transports_used_this_phase
+        _remaining = max(_remaining, 0)
+    except Exception:
+        pass
+
     print(
         f"  {Colors.GREEN}[Transport] Loaded: {load_from} → {load_sz} → {transit_sz}"
         f"  cargo: {units}{Colors.RESET}"
@@ -905,11 +967,14 @@ def tool_transport_units(
         "ok": True,
         "message": (
             f"Load+move success: {units} from {load_from} are aboard transport at {transit_sz}. "
-            f"NEXT NCM: tool_move_units('{transit_sz}', '<land_territory>', units_json) to land, "
-            f"then tool_move_units('{transit_sz}', '{JAPAN_LOADING_ZONE}', [transport]) to return."
+            f"Remaining idle transports at {load_sz}: {_remaining}. "
+            + (f"You can dispatch {_remaining} more transport(s) this round."
+               if _remaining > 0
+               else "All transports dispatched — do NOT call tool_transport_units again this round.")
         ),
         "transit_sz": transit_sz,
         "units": units,
+        "remaining_transports": _remaining,
     }, ensure_ascii=False)
 
 
@@ -962,10 +1027,60 @@ def tool_move_units(from_territory: str, to_territory: str, units_json: str) -> 
                 ),
             }, ensure_ascii=False)
 
+    # Owner validation during Combat Move: prevent attacking own territories
+    current_phase = ""
+    try:
+        current_phase = _client.get_phase()
+    except Exception:
+        pass
+    if current_phase == "japaneseCombatMove" and "Sea Zone" not in to_territory:
+        try:
+            state = _state_cache.get()
+            if state is None:
+                state = _client.get_state()
+            territories = state.get("territories", [])
+            owner = ""
+            for _t in territories:
+                if _t.get("name") == to_territory:
+                    owner = _t.get("owner", "")
+                    break
+            if owner.lower() in ("japanese", "japan"):
+                return json.dumps({
+                    "ok": False,
+                    "error": (
+                        f"Blocked: {to_territory} is owned by {owner}. "
+                        f"Combat Move cannot target friendly territories. "
+                        f"Use Noncombat Move to reposition within friendly territory."
+                    ),
+                }, ensure_ascii=False)
+        except Exception:
+            pass
+
+    # Auto-complete unload: when moving from sea zone to land, unload ALL ground units
+    if "Sea Zone" in from_territory and "Sea Zone" not in to_territory and not only_transports:
+        all_ground = _get_ground_units_in_sz(from_territory)
+        if all_ground:
+            agent_types = {u.get("unitType") for u in units}
+            full_types = {u.get("unitType") for u in all_ground}
+            if full_types - agent_types:
+                missing = [u for u in all_ground if u.get("unitType") not in agent_types]
+                missing_str = ", ".join(f"{u['count']}x {u['unitType']}" for u in missing)
+                print(
+                    f"  {Colors.YELLOW}[Unload] Agent forgot {missing_str} — auto-including all ground units{Colors.RESET}"
+                )
+            units = all_ground
+
     result = _client.act_move(from_territory, to_territory, units)
 
     if result.get("ok", False):
         _state_cache.record_committed(to_territory, units)
+    else:
+        err = result.get("error", "")
+        result["hint"] = (
+            f"Move {from_territory} → {to_territory} FAILED. "
+            f"DO NOT retry this exact move — the units are likely already committed or the territories are not adjacent. "
+            f"Skip and move to your next action."
+        )
 
     return json.dumps(result, ensure_ascii=False)
 
@@ -993,27 +1108,27 @@ You interact with the game ONLY through tools. Never guess the board state — a
 1. Politics      — declare war or pass
 2. Purchase      — buy units (BUY_UNITS → END_TURN → STOP)
 3. Combat Move   — attack positions (PERFORM_MOVE × N → END_TURN → STOP)
-4. Battle        — game resolves combat automatically (END_TURN → STOP)
+4. Battle        — resolved automatically
 5. Noncombat Move— reposition/reinforce (PERFORM_MOVE × N → END_TURN → STOP)
-6. Place Units   — deploy purchased units (PLACE_UNITS → END_TURN → STOP)
+6. Place Units   — handled automatically (no LLM needed)
 7. Collect Income— automatic
 
 You handle ONE phase per invocation. After END_TURN succeeds, your job is done.
 
 === UNIT STATS ===
-infantry (inf)      3 PU  | Att 1  Def 2  Mov 1 | 1 transport slot
-artillery (art)     4 PU  | Att 2  Def 2  Mov 1 | 1 transport slot | boosts 1 adjacent inf to Att 2
-armour/tank         6 PU  | Att 3  Def 3  Mov 2 | 2 transport slots (fills entire transport alone)
+infantry (inf)      3 PU  | Att 1  Def 2  Mov 1 | light unit (1 slot)
+artillery (art)     4 PU  | Att 2  Def 2  Mov 1 | heavy unit (1 slot) | boosts 1 adjacent inf to Att 2
+armour/tank         6 PU  | Att 3  Def 3  Mov 2 | heavy unit (1 slot)
 fighter             10 PU | Att 3  Def 4  Mov 4 | air unit — can land on carrier
 tac_bomber          11 PU | Att 3  Def 3  Mov 4 | +1 Att when paired with fighter or tank
 strategic_bomber    12 PU | Att 4  Def 1  Mov 6 | can strategic-bomb enemy factories
 destroyer           8 PU  | Att 2  Def 2  Mov 2 | counters submarines
-transport           7 PU  | Att —  Def —  Mov 2 | 2 slots total
+transport           7 PU  | Att —  Def —  Mov 2 | carries 1 heavy + 1 light (or 2 light)
 carrier             16 PU | Att 1  Def 2  Mov 2 | holds 2 fighters
 battleship          20 PU | Att 4  Def 4  Mov 2 | takes 2 hits
 
-Transport load combos (2 slots max):
-  1 armour (2 slots) | 1 inf + 1 art | 1 inf + 1 mech_inf | 2 infantry
+Transport capacity: 1 heavy + 1 light (max 1 heavy unit per transport):
+  BEST: 1 armour + 1 inf (9 PU, Att 4) | 1 art + 1 inf (7 PU, Att 3) | 2 infantry (6 PU, Att 2)
 
 === AIRCRAFT USAGE — CRITICAL ===
 Fighters and tactical bombers are powerful offensive assets Japan ignores too often.
@@ -1036,82 +1151,24 @@ HOW TO USE AIRCRAFT IN COMBAT:
   5. If no safe landing within range, do NOT send aircraft
 
 === TANK (armour) USAGE — CRITICAL ===
-Tanks are Japan's highest-value ground unit per transport slot.
-  - 1 tank on a transport = FULL load, attack value 3 vs 2 infantry attack avg 1.5
+Tanks are Japan's highest-value ground unit.
+  - 1 tank + 1 inf on a transport = optimal load (Att 4 total, 9 PU)
   - Use tanks to spearhead attacks on fortified territories
   - Move 2 means tanks can exploit breakthroughs (move to captured territory)
-  - Priority: always load tanks BEFORE infantry when filling transport
+  - ALWAYS load 1 tank + 1 infantry per transport — never send a tank alone
 
 === TRANSPORT CYCLING — MANDATORY EVERY ROUND ===
-Japan is an island. Every infantry on Japan = ZERO combat power.
-Transport shipping is the ONLY way to project military force.
+Japan is an island. Troops on Japan = zero combat value.
+Transports are the ONLY way to project force to the mainland.
 
-THE COMPLETE CYCLE (must execute every NCM):
-
-PHASE A — UNLOAD & RETURN (check first, highest priority):
-  For every transit sea zone (19 SZ, 20 SZ, 36 SZ, etc.) that contains ground units:
-    1. Land ALL troops to the best adjacent friendly/empty territory:
-         tool_move_units("<transit_sz>", "<land_territory>", units_json)
-    2. IMMEDIATELY return the empty transport to 6 Sea Zone:
-         tool_move_units("<transit_sz>", "6 Sea Zone", '[{{"unitType":"transport","count":1}}]')
-  → Both unload and return MUST happen in the SAME NCM phase.
-
-PHASE B — LOAD & DISPATCH (all empty transports in 6 Sea Zone):
-  For every empty transport sitting in 6 Sea Zone:
-    1. Choose load priority: armour (2 slots) > inf+art > inf+mech_inf > 2 infantry
-    2. Choose destination sea zone based on CURRENT FRONTLINE (see guide below):
-         tool_transport_units("Japan", "6 Sea Zone", "<transit_sz>", units_json)
-  → Every empty transport must depart. Sitting empty = strategic waste.
-
-DYNAMIC DESTINATION SELECTION (follow the frontline south):
-  Frontline at northern China (Kiangsu/Shantung):    → 19 Sea Zone or 20 Sea Zone
-  Frontline at central China  (Kiangsi/Anhwe):       → 19 Sea Zone (approach from coast)
-  Frontline at south China    (Kwangtung/Kwangsi):   → 36 Sea Zone
-  Frontline at Indo-China     (French Indo-China):   → 36 Sea Zone or 41 Sea Zone
-  Frontline at Southeast Asia (Burma/India approach): → 37 Sea Zone or nearest SZ
-
-  → Always check get_state neighbors to confirm which sea zone is adjacent to target land.
-  → As Japan captures territory southward, shift transit SZ accordingly.
-
-STOCKPILE WARNING SYSTEM (check at NCM start):
-  japan_land = infantry + artillery + armour + mech_infantry in Japan territory
-  empty_tr   = transport count in 6 Sea Zone with no cargo
-  
-  japan_land ≥ 3 AND empty_tr ≥ 1  → MANDATORY LOAD: dispatch ALL empty transports now
-  japan_land ≥ 5 AND empty_tr ≥ 1  → CRITICAL: output stockpile alert and full dispatch
-  japan_land ≥ 5 AND empty_tr = 0  → OK: transports at sea, wait for return
-  All transports at sea + Japan empty → Optimal state
-
-=== INDIA CAMPAIGN STRATEGY (PRIMARY OBJECTIVE) ===
-The strategic goal is to capture India (Calcutta). This is the path to victory.
-
-STAGE 1 — Secure the Chinese Coast (Rounds 1-3):
-  Hold: Shantung, Kiangsu, Kiangsi, Kwangsi (coastal chain — do NOT lose these)
-  Compress Chinese forces westward with superior numbers, but do NOT overextend inland.
-  Push south: Anhwe → Kiangsi → Kwangtung route is the main advance axis.
-  Use transports to reinforce the southern coast continuously.
-
-STAGE 2 — Take Kwangtung & French Indo-China (Rounds 3-5):
-  Kwangtung is MANDATORY before India push. It opens the sea lane to Southeast Asia.
-  IF AT WAR WITH UK: Capture Kwangtung FIRST before any other objective.
-  After Kwangtung: immediately attack French Indo-China.
-  Position naval forces (destroyers, cruisers) adjacent to UK-controlled coastal territories
-  to reduce their IPC income and threaten amphibious landings.
-
-STAGE 3 — India Push (Rounds 5+):
-  Accumulate 6+ ground units in French Indo-China + Burma staging area.
-  Use transports to accelerate troop buildup (37/41 Sea Zone staging).
-  Attack India with combined arms: ground + aircraft support.
-  Objective: Calcutta (India). Win condition triggered upon capture.
-
-KEY RULES:
-  • Never waste forces in central China (Hupeh, Shensi, Szechwan) — too far from victory path
-  • Naval units in enemy coastal sea zones reduce IPC. Use destroyers aggressively.
-  • Keep at least 2 fighters positioned at forward bases for continuous air support
+NCM priority order:
+  1. UNLOAD: For each transit SZ with ground units — land troops, then return transport to 6 Sea Zone.
+  2. LOAD & DISPATCH: For each empty transport at 6 Sea Zone — load 1 armour + 1 infantry (best combo),
+     dispatch toward the current frontline (use neighbors in get_state to pick the right SZ).
+  3. Never leave an empty transport idle at 6 SZ when Japan has land units to ship.
 
 === MAP TOPOLOGY ===
 Each territory in get_state includes a "neighbors" list — use it directly.
-Key southern route: Kiangsi → Kwangtung → French Indo-China → Burma → India
 
 === RELEVANT RULES & EXPERIENCE ===
 {rag_context}
@@ -1120,7 +1177,6 @@ Key southern route: Kiangsi → Kwangtung → French Indo-China → Burma → In
 - tool_get_state()                                   — observe the board (call first)
 - tool_get_legal_actions()                           — see what actions are available
 - tool_buy_units(items_json)                         — Purchase phase: buy units
-- tool_place_units(placements_json)                  — Place phase: deploy purchased units
 - tool_move_units(from, to, units_json)              — move / attack; also used for landing and transport return
 - tool_transport_units(load_from, load_sz, transit_sz, units_json) — NCM: load + dispatch transport
 - tool_predict_battle_odds(attacker_json, defender_json) — Monte Carlo simulator (±1.5% accuracy)
@@ -1173,7 +1229,7 @@ def build_agent(
         tools=tools,
         verbose=False,
         callbacks=[handler],
-        max_iterations=20,
+        max_iterations=25,
     )
     return executor, handler
 
@@ -1194,59 +1250,19 @@ If you do not wish to declare war, call tool_end_turn() immediately.
 """,
 
     "japanesePurchase": """
-=== PURCHASE PHASE === Budget: max 5 tool calls.
+=== PURCHASE PHASE === Budget: max 3 tool calls.
 
-IRON RULE: Spend ALL PUs this turn (leave at most 2 unspent). Hoarding IPC is a strategic error.
+MANDATORY: Follow the PURCHASE ADVISOR above exactly. It has already calculated the optimal buy.
+  - If it says buy transports → you MUST buy that many transports FIRST.
+  - Remaining PUs → buy armour + infantry pairs (9 PU each: 1 armour + 1 infantry).
+  - Leftover PUs that can't afford a pair → buy infantry (3 PU each).
+  - Spend ALL PUs (leave at most 2 unspent).
 
-Step 1 (required): call tool_get_state once. Record these 3 numbers:
-  - japan_pus:       Current PUs
-  - japan_land:      Total land units in Japan territory (infantry + artillery + armour + mech_infantry)
-  - total_transports: Japanese transports across ALL sea zones (6 SZ + 19 SZ + 20 SZ + 36 SZ etc.)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-ISLAND TRAP CHECK (evaluate BEFORE buying anything):
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Japan is an island. Every land unit on Japan = ZERO combat value until transported.
-
-  IF japan_land ≥ 4 AND total_transports ≤ 2:
-    → 🚨 OUTPUT: "ISLAND TRAP: X land units stuck on Japan with only Y transports!"
-    → Buy transports FIRST: buy min(2, affordable) transports before ANY other unit.
-    → Then spend remaining PUs on armour > artillery > infantry.
-    → Do NOT buy more infantry until transport deficit is resolved.
-
-  IF japan_land ≥ 6 AND total_transports ≤ 3:
-    → ⚠ OUTPUT: "STOCKPILE WARNING: X units on Japan, only Y transports. Buy 1 transport."
-    → Buy 1 transport first, then land units.
-
-  IF japan_land < 4 OR total_transports ≥ 3:
-    → OK: proceed to normal purchase decision tree below.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Step 2 (required): buy according to this decision tree, spending all PUs:
-
-  A) total_transports < 3 (even if Island Trap didn't fire):
-     PUs ≥ 14  → buy 2 transports (14 PU) + spend remainder on armour/artillery/infantry
-     PUs 7-13  → buy 1 transport (7 PU) + spend remainder
-     Goal: always maintain ≥ 3 transports in Japanese-controlled sea zones
-
-  B) total_transports ≥ 3 — buy land units by transport efficiency (highest value per slot):
-
-     TRANSPORT EFFICIENCY RULE (2 slots per transport):
-       1 armour (6 PU)        = fills entire transport alone | Attack 3, best per-slot value
-       1 inf + 1 art (7 PU)   = fills transport | artillery boosts infantry attack
-       2 infantry (6 PU)      = fills transport | weakest attack, lowest priority
-
-     Purchase priority order:
-       1. armour (6 PU each)     — highest per-slot attack, fills one transport
-       2. artillery (4 PU each)  — pairs with infantry for +1 attack boost
-       3. infantry (3 PU each)   — only to spend last few PUs
-
-     Example (PUs=26): armour×2 (12) + artillery×2 (8) + infantry×2 (6) = 26 PUs spent
-
-Step 3 (required): call tool_end_turn().
+Step 1: call tool_get_state once (verify PUs).
+Step 2: call tool_buy_units with EXACTLY what the PURCHASE ADVISOR recommended.
+Step 3: call tool_end_turn().
 
 ► STOP: After tool_end_turn() returns ok=true, output your purchase summary and stop ALL tools.
-  Do NOT call tool_get_state or any other tool after tool_end_turn in this phase.
 """,
 
     "japaneseCombatMove": """
@@ -1283,8 +1299,10 @@ POLITICAL RESTRICTIONS:
   - You cannot enter UK, US, ANZAC, or Chinese territories without being at war.
   - If an action is blocked by politics, cancel it immediately. Do not retry.
 
-IRON RULE: Never skip this phase without evaluating at least 3 adjacent enemy territories.
+IRON RULE: You MUST evaluate ALL adjacent enemy territories (not just 1-2).
 If tool_move_units is not called, the system will force a re-evaluation.
+MULTI-TARGET: Attack every target where ratio ≥ 1.5 — do NOT stop after one attack.
+Typical combat rounds should produce 2-4 attacks across multiple fronts.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 FREE CAPTURE RULE (check FIRST, before any force ratio evaluation):
@@ -1297,12 +1315,12 @@ If ANY enemy territory has 0 defenders (empty):
   → Do this BEFORE evaluating other attacks.
 Example: Yunnan has 0 Chinese infantry → move 1 inf from Kwangsi to Yunnan. Done. +2 IPC.
 
-Tool budget (strict — do not exceed to avoid iteration limit):
-  tool_get_state           × 1 (once only)
-  tool_predict_battle_odds × 0-4 (use for any borderline attack)
-  tool_move_units          × 0-5 (ground + air attack moves)
-  tool_end_turn            × 1 (required)
-  ─────────── total max 11 calls ───────────
+Tool budget:
+  tool_get_state           × 1
+  tool_predict_battle_odds × 0-6 (evaluate every borderline target)
+  tool_move_units          × 0-8 (ground + air moves for MULTIPLE targets)
+  tool_end_turn            × 1
+  ─────────── total max 16 calls ───────────
 
 Step 1 (required, once only): tool_get_state
   Record: unit counts in all territories. Do not call again.
@@ -1322,14 +1340,10 @@ Step 2: evaluate ALL adjacent enemy territories. Decision rules:
     CRITICAL: verify fighters have a safe landing territory within range BEFORE attacking.
     Tac bombers: always pair with a fighter or an attacking tank (+1 attack bonus).
 
-  PRIORITY TARGETS (southern campaign first):
-    1. Kwangtung          — MANDATORY if at war with UK; opens sea lane south
-    2. Kiangsi / Kwangsi  — compress China, advance south
-    3. French Indo-China  — staging area for India push
-    4. Any territory on the Kiangsi → Kwangtung → FIC → India route
+  PRIORITY: Follow the active Strategic Plans (injected in Round Plan above).
+  If no plans: capture adjacent enemy territories with highest IPC value first.
 
   NOTES:
-    - Amphibious landings happen in NCM, not here.
     - Move ground units AND aircraft in this phase. Aircraft must land after battle.
     - Skip failed attacks immediately, do not retry the same target.
 
@@ -1394,187 +1408,34 @@ Call tool_end_turn() immediately.
     "japaneseNonCombatMove": """
 === NONCOMBAT MOVE PHASE === Budget: max 20 tool calls. Last call MUST be tool_end_turn().
 
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE GUARD — LEGAL ACTIONS IN NONCOMBAT MOVE:
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-✓ ALLOWED: Moving units between FRIENDLY territories.
-✓ ALLOWED: Unloading transport troops onto friendly or newly-captured territories.
-✓ ALLOWED: Repositioning aircraft to forward bases.
-✗ FORBIDDEN: Initiating new attacks or moving into enemy territories.
-✗ FORBIDDEN: Retrying any action that returned ok=false — skip and continue.
+RULES: Move only between FRIENDLY territories. No attacks. If a tool returns ok=false, skip it.
+TOOLS: tool_transport_units to load+dispatch, tool_move_units to unload/reposition.
 
-DEFERRED LANDINGS CHECK (do this BEFORE the Stockpile Check):
-  For every sea zone containing Japanese ground units (troops on transports in transit):
-    - These are troops loaded during Combat Move that could not land yet.
-    - Land them now: tool_move_units("<transit_sz>", "<friendly_territory>", units_json)
-    - Then return the empty transport to 6 Sea Zone immediately.
-  Only proceed to Phase A after all deferred landings are resolved.
+Step 1 (required): call tool_get_state once. Note:
+  A) Sea zones with Japanese ground units (troops in transit — need landing)
+  B) Empty transports in 6 Sea Zone (ready to load)
+  C) Land units on Japan island (waiting for transport)
+  D) Rear areas (Manchuria, Korea) with idle units
 
-TOOL RULES:
-  - To dispatch troops to a frontline: use tool_transport_units (NOT tool_move_units)
-  - To land troops from sea zone to territory: use tool_move_units("<sea_zone>", "<territory>", units)
-  - To return empty transport: use tool_move_units("<sea_zone>", "6 Sea Zone", transport)
-  - If a tool returns ok=false, skip it immediately. Do not retry.
-
-Step 1 (required, once only): tool_get_state. Record:
-  A) All sea zones that contain Japanese ground units (those troops are aboard transports, ready to land)
-  B) All sea zones with Japanese transports: which are loaded vs empty
-  C) Japan territory: infantry + artillery + armour + mech_infantry count (japan_land)
-  D) 6 Sea Zone: how many empty transports are present (empty_tr)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-MANDATORY STOCKPILE CHECK (complete before any other action)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Compute japan_land and empty_tr from get_state. Then declare one of:
-
-  japan_land ≥ 3 AND empty_tr ≥ 1
-    → Output: "⚡ STOCKPILE: Japan has X land units + Y empty transports in 6 SZ → LOAD ALL"
-    → Skip to PHASE B immediately
-
-  japan_land ≥ 5 AND empty_tr = 0
-    → Output: "✓ All transports at sea. X units waiting in Japan. Return transport next round."
-    → Execute PHASE A (unload & return) to bring transports back sooner
-
-  japan_land ≥ 5 AND empty_tr ≥ 1
-    → Output: "🚨 CRITICAL STOCKPILE: X units in Japan + Y empty transports idle! Load immediately!"
-    → Execute PHASE B first, ALL transports must depart
-
-  japan_land < 3 OR empty_tr = 0 → continue normally to PHASE A
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-REAR AREA AUDIT (MANDATORY — execute BEFORE transport operations)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Scan these rear territories from get_state: Manchuria, Korea, Jehol.
-Also check Shantung if it has NO adjacent enemy territory.
-
-For EACH rear territory:
-  IF land units ≥ 2 AND territory has NO adjacent enemy territory:
-    → Move ALL land units EXCEPT 1 infantry toward the nearest frontline.
-    → Southern advance route: Manchuria → Shantung → Kiangsu → Kiangsi → Kwangsi
-    → Korea → Shantung → ... (same chain)
-    → Execute each hop as a separate tool_move_units call.
-    → Units can only move 1 territory per NCM, so push them one hop south each round.
-
-  IF Manchuria has ≥ 4 land units with no adjacent enemy:
-    → Output: "🚨 REAR STOCKPILE: Manchuria has X units doing nothing! Moving south."
-    → Move ALL but 1 infantry in one hop (e.g. Manchuria → Shantung).
-
-RATIONALE: Units behind the front are ZERO combat value. Every round they sit idle = wasted.
-This audit takes 1-3 tool calls and is the highest-impact NCM action after transport unloading.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE A — UNLOAD & RETURN (highest priority if troops in transit)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-For every transit sea zone (19 SZ, 20 SZ, 36 SZ, etc.) containing ground units:
-  1. Land ALL troops to the best adjacent territory:
-       tool_move_units("<transit_sz>", "<territory>", units_json)
-     Choose territory: prefer enemy/empty territory adjacent to India route, or reinforce thin lines
-  2. IMMEDIATELY return the empty transport to 6 Sea Zone (same NCM phase!):
-       tool_move_units("<transit_sz>", "6 Sea Zone", '[{{"unitType":"transport","count":1}}]')
-  → Unload + return in the SAME round = transport is ready to load again next round.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE B — LOAD & DISPATCH (all empty transports in 6 Sea Zone)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-⚠ CRITICAL: You MUST dispatch EVERY empty transport. One tool_transport_units call per transport.
-   Count the empty transports in 6 Sea Zone from get_state. Then make that many calls.
-
-For EACH empty transport in 6 Sea Zone:
-  1. Select load priority (fill 2 slots):
-       armour (2 slots) > inf+art > inf+mech_inf > 2 infantry
-  2. Choose DYNAMIC transit sea zone based on current frontline:
-       Northern China (Kiangsu/Shantung front): 19 Sea Zone or 20 Sea Zone
-       Central China  (Kiangsi/Anhwe front):    19 Sea Zone
-       Southern China (Kwangtung/Kwangsi):      36 Sea Zone
-       Indo-China     (French Indo-China area): 36 Sea Zone
-       India approach (Burma/India staging):    37 Sea Zone
-     → Check get_state neighbors to confirm sea zone adjacency to target land territory
-  3. Dispatch:
-       tool_transport_units("Japan", "6 Sea Zone", "<transit_sz>", units_json)
-
-MULTI-TRANSPORT EXAMPLE (3 empty transports in 6 SZ, Japan has 4 inf + 2 art + 1 armour):
-  Call 1: tool_transport_units("Japan", "6 Sea Zone", "36 Sea Zone",
-            '[{{"unitType":"armour","count":1}}]')                         ← armour fills transport alone
-  Call 2: tool_transport_units("Japan", "6 Sea Zone", "19 Sea Zone",
-            '[{{"unitType":"infantry","count":1}},{{"unitType":"artillery","count":1}}]')  ← inf+art pair
-  Call 3: tool_transport_units("Japan", "6 Sea Zone", "19 Sea Zone",
-            '[{{"unitType":"infantry","count":1}},{{"unitType":"artillery","count":1}}]')  ← another pair
-  → 3 calls = 3 transports dispatched with 5 units. Every transport DEPARTS.
-
-MULTI-TRANSPORT UNLOAD EXAMPLE (2 loaded transports in 19 SZ with inf×2 + art×1 + armour×1):
-  Call 1: tool_move_units("19 Sea Zone", "Kiangsu",
-            '[{{"unitType":"infantry","count":2}},{{"unitType":"artillery","count":1}}]')
-  Call 2: tool_move_units("19 Sea Zone", "Kiangsu",
-            '[{{"unitType":"armour","count":1}}]')
-  Call 3: tool_move_units("19 Sea Zone", "6 Sea Zone",
-            '[{{"unitType":"transport","count":2}}]')                      ← return BOTH transports
-  → Unload ALL cargo first, then return ALL empty transports in one call.
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE C — AIRCRAFT REPOSITIONING
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-After combat, reposition fighters/tac bombers to forward bases:
-  - Move fighters to the frontmost friendly territory within range
-  - Preferred bases: Manchuria, Kiangsu, Shantung, Kiangsi, Kwangtung (as captured)
-  - Ensures air support is available for next Combat Move without wasting move range
-  tool_move_units("<current_territory>", "<forward_base>", air_units_json)
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-PHASE D — GROUND CONSOLIDATION (staging for next round's attack)
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-This phase executes the NONCOMBAT PLAN from Combat Move. Follow this chain of thought:
-
-  STEP D-1 — Identify next round's primary target:
-    → Read "Next Round's Primary Target" from the NONCOMBAT PLAN above.
-    → If no plan: choose the most strategically valuable reachable enemy territory.
-
-  STEP D-2 — Select the staging territory:
-    → Identify YOUR friendly territory directly adjacent to that target.
-    → This territory becomes your staging base. Mass forces here.
-    → Call tool_get_state to verify adjacency if unsure.
-
-  STEP D-3 — Calculate how many forces are needed:
-    → Estimate the target's defender count from get_state.
-    → You need attacking_force / defending_force ≥ 1.5 (or ≥55% win rate).
-    → Count units already in the staging territory.
-    → Deficit = required_forces − already_in_staging.
-
-  STEP D-4 — Execute reinforcement moves:
-    → Move units from nearby friendly territories INTO the staging territory.
-    → After pulling units from a territory, check if its defense has dropped below safe threshold.
-      If yes: pull units from THAT territory's neighbors to backfill.
-    → Example chain:
-        a. Move 2 inf from Kiangsu → Kiangsi (staging for Kwangtung attack)
-        b. Kiangsu now thin → Move 2 inf from Shantung → Kiangsu to backfill
-        c. Shantung thin → Move 1 inf from Manchuria → Shantung
-
-    Execute each move with:
-      tool_move_units("<origin>", "<destination>", units_json)
-    Only move to FRIENDLY territories. NCM cannot enter enemy territories.
+EXECUTION ORDER:
+  1. UNLOAD: For each SZ with ground units → land troops to adjacent friendly territory,
+     then return transport to 6 Sea Zone.
+  2. REAR AUDIT: Move idle units from Manchuria/Korea toward the frontline (1 hop per round).
+     Keep only 1 infantry as garrison.
+  3. LOAD & DISPATCH: For each empty transport in 6 SZ → load 1 armour + 1 infantry (optimal),
+     pick transit SZ near current frontline, call tool_transport_units per transport.
+  4. AIRCRAFT: Reposition fighters/tac bombers to forward bases within range.
+  5. CONSOLIDATION: Stage ground forces adjacent to next round's attack target
+     (follow the NONCOMBAT PLAN from Combat Move if available).
 
 Step N (required): call tool_end_turn().
 
 ► STOP: After tool_end_turn() returns ok=true, output your NCM summary and stop ALL tools.
-  Do NOT call tool_get_state or any other tool after tool_end_turn in this phase.
 """,
 
     "japanesePlace": """
-=== PLACE UNITS PHASE === Budget: max 5 tool calls.
-
-CRITICAL: placeOptions shows ONLY units purchased THIS turn — not existing map units.
-  Example: if 6 Sea Zone has 8 transports already, those are from previous rounds.
-  If you bought 2 transports this turn, only those 2 need placing. Count = 2, not 10.
-  NEVER confuse "existing map units" with "units to place this turn".
-
-Step 1 (required): call tool_get_state, read placeOptions carefully.
-Step 2 (required): call tool_place_units once with exactly what placeOptions lists:
-  - Land units (infantry/artillery/armour) → place at a territory with a factory (Japan, Manchuria)
-  - Naval units (transports/destroyers/carriers) → place at sea zone adjacent to a factory (6 Sea Zone)
-  - Count must match purchase exactly — do not hallucinate extra units
-Step 3 (required): call tool_end_turn().
-
-► STOP: After tool_end_turn() returns ok=true, output your placement summary and stop ALL tools.
-  Do NOT call tool_get_state or any other tool after tool_end_turn in this phase.
+=== PLACE UNITS PHASE ===
+Place Units is handled automatically. Call tool_end_turn() only.
 """,
 
     "japaneseEndTurn": """
@@ -1669,171 +1530,187 @@ def _invoke_with_retry(
 
 
 # ─────────────────────────────────────────────────────────────
-# 按阶段生成 RAG 检索 query
+# Strategic Plan Initialization (game start, 1 LLM call)
 # ─────────────────────────────────────────────────────────────
 
-def _phase_rag_query(
-    game_phase: str,
-    round_num: int,
-    strategic_goal: str = "Southern Expansion",
-) -> Optional[str]:
+from memory import (
+    StrategicPlan, StrategicPlansInit,
+    load_national_strategy, ns_to_prompt_text,
+)
+
+_INIT_PLANS_PROMPT = """You are the supreme strategist for {nation} in Axis & Allies Pacific 1940.
+Round 1 is about to begin.
+
+=== NATIONAL STRATEGY (from previous games) ===
+{ns_text}
+
+=== CURRENT BOARD STATE ===
+{compressed_state}
+
+{nation} PUs: {pus}
+
+Based on the national strategy and the current board state, create 2-4 Strategic Plans
+for this game. Each plan should:
+1. Have a clear, specific objective (territory to capture, defensive line to hold, etc.)
+2. Include the REASON why this plan matters strategically
+3. List concrete ACTIONS needed (which units move where, what to purchase)
+4. State the EXPECTED OUTCOME with territory names and a target round
+5. Be ordered by priority (plan 1 = most urgent)
+
+If the national strategy already has validated plans, adopt them with adjustments based
+on the current board state. If it has failed plans, learn from the lessons_learned.
+
+Plan IDs should be short descriptive strings like "sp_secure_coast", "sp_capture_fic".
+"""
+
+
+def _initialize_strategic_plans(
+    ns: dict,
+    round_num: int = 1,
+) -> list[StrategicPlan]:
     """
-    Generate RAG queries only for the 3 action phases; return None for others.
-
-    Query format matches stored text prefix exactly:
-      "[Purchase Units][Early][Southern Expansion] round 3"
-    This maximizes cosine similarity for phase-specific experience retrieval.
-
-    game_stage: Early (rounds 1-3) / Mid (rounds 4-6) / Late (rounds 7+)
+    Game start: generate initial Strategic Plans from National Strategy + board state.
+    Called once before Round 1.
     """
-    _PHASE_MAP: dict[str, str] = {
-        "japanesePurchase":      "Purchase Units",
-        "japaneseCombatMove":    "Combat Move",
-        "japaneseNonCombatMove": "Noncombat Move",
-    }
-    phase_label = _PHASE_MAP.get(game_phase)
-    if phase_label is None:
-        return None
+    state = _client.get_state()
+    compressed = _compress_state_for_llm(state)
+    pus = state.get("japan", {}).get("pus", "?")
+    nation = ns.get("nation", "Japan")
+    ns_text = ns_to_prompt_text(ns) or "(No prior strategy — first game)"
 
-    if round_num <= 3:
-        stage = "Early"
-    elif round_num <= 6:
-        stage = "Mid"
-    else:
-        stage = "Late"
+    prompt = _INIT_PLANS_PROMPT.format(
+        nation=nation,
+        ns_text=ns_text,
+        compressed_state=compressed,
+        pus=pus,
+    )
 
-    return f"[{phase_label}][{stage}][{strategic_goal}] round {round_num}"
+    try:
+        llm = ChatOpenAI(model=LLM_MODEL, temperature=0.1)
+        structured = llm.with_structured_output(StrategicPlansInit)
+        result = structured.invoke(prompt)
+        plans = result.plans
+
+        print(f"\n{Colors.CYAN}{'━'*60}{Colors.RESET}")
+        print(f"{Colors.CYAN}{Colors.BOLD}  STRATEGIC PLANS INITIALIZED — {len(plans)} plans{Colors.RESET}")
+        print(f"{Colors.CYAN}{'━'*60}{Colors.RESET}")
+        for i, p in enumerate(plans, 1):
+            print(f"  {Colors.CYAN}{i}. [{p.plan_id}] {p.name} (target round {p.target_round}){Colors.RESET}")
+            print(f"     {Colors.DIM}Reason: {p.reason}{Colors.RESET}")
+            print(f"     {Colors.DIM}Expected: {p.expected_outcome}{Colors.RESET}")
+        print(f"{Colors.CYAN}{'━'*60}{Colors.RESET}\n")
+
+        return plans
+    except Exception as e:
+        print(f"  {Colors.RED}[Init Plans] Failed: {e}{Colors.RESET}")
+        # Fallback: create plans from NS file directly
+        fallback = []
+        for sp in ns.get("strategic_plans", []):
+            fallback.append(StrategicPlan(
+                plan_id=sp["id"],
+                name=sp["name"],
+                reason=sp.get("reason", ""),
+                actions=sp.get("key_actions", []),
+                expected_outcome=sp.get("expected_outcome", ""),
+                target_round=int(sp.get("target_rounds", "3").split("-")[-1]),
+                status="active",
+                progress=[],
+            ))
+        if fallback:
+            print(f"  {Colors.DIM}[Init Plans] Fallback: loaded {len(fallback)} plans from NS file{Colors.RESET}")
+        return fallback
 
 
 # ─────────────────────────────────────────────────────────────
 # Layer 2 — Round Plan: unified plan generated before phase loop
 # ─────────────────────────────────────────────────────────────
 
-_ROUND_PLAN_PROMPT = """You are planning Japan's turn in Axis & Allies Pacific 1940.
-Round: {round_num} | Stage: {stage} | Strategic Goal: {strategic_goal}
-Japan PUs: {pus}
+_ROUND_PLAN_PROMPT = """You are planning a turn in Axis & Allies Pacific 1940.
+Round: {round_num} | Stage: {stage}
+PUs available: {pus}
 
-Current board state:
+=== ACTIVE STRATEGIC PLANS ===
+{plans_section}
+
+=== BOARD STATE ===
 {compressed_state}
 
 {prev_rounds_section}
 
 {rag_section}
 
-Generate a ROUND PLAN using the following 3-step chain of thought, then a Purchase Plan.
-Complete each step in order. Every statement must reference specific territory names and unit counts.
+Your job: create a ROUND PLAN that advances the active Strategic Plans.
+
+For each active plan, state:
+  - What progress can be made THIS round
+  - Which specific attacks/moves serve this plan
+
+Then generate the full execution plan using this 3-step chain of thought:
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-STEP 1 — STRATEGIC DIRECTION & TARGET EVALUATION
-  State the overall strategic direction (e.g. "Southern Expansion toward India").
-  List ALL candidate attack targets (every enemy territory adjacent to Japanese forces).
-  For each candidate, note: owner, defender units, adjacent Japanese units.
+STEP 1 — TARGET EVALUATION (linked to Strategic Plans)
+  For each active plan, list candidate targets this round.
+  For each candidate: owner, defender units, adjacent friendly units, force ratio.
 
-STEP 2 — ATTACK FEASIBILITY (evaluate EVERY candidate from Step 1)
+STEP 2 — ATTACK DECISIONS
   For each candidate target:
-    a) At war with the owner? (if not → BLOCKED)
-    b) Defender units and defense power
-    c) All Japanese units that can reach it this round (list origins)
-    d) Force ratio (attackers / defenders)
+    ratio >= 1.5 → GO (state which plan this serves)
+    ratio 1.0-1.5 → BORDERLINE — check aircraft support
+    ratio < 1.0 or not at war → NO-GO (stage toward it for next round)
 
-  Decision per target:
-    ratio >= 1.5 → GO
-    ratio 1.0-1.5 → BORDERLINE — check if aircraft support pushes above 1.5
-    ratio < 1.0 or not at war → NO-GO
+  THIS ROUND ATTACKS: [targets with units and origins, linked to plan IDs]
+  NEXT ROUND STAGING: [targets to prepare for, staging territory, units needed]
 
-  Output two lists:
-    THIS ROUND ATTACKS: [all GO targets — exact units, origins, aircraft support]
-    NEXT ROUND TARGETS: [all NO-GO targets worth staging toward — for each one:
-      staging territory (friendly, adjacent to target), current units there, units still needed for ratio >= 1.5]
+STEP 3 — NONCOMBAT MOVE + PURCHASE PLAN
+  Noncombat moves (priority order):
+    1. Unload loaded transports at frontline
+    2. Return empty transports to home loading zone
+    3. Ground force redeployment toward staging territories
+    4. Load & dispatch from home loading zone
 
-STEP 3 — NONCOMBAT MOVE PLAN (transport + ground redeployment, unified)
-  This step plans ALL noncombat moves. Execute in this priority order during NCM phase:
-
-  PRIORITY 1 — UNLOAD TRANSPORTS AT FRONTLINE
-    For each sea zone with a LOADED Japanese transport (ground units aboard):
-      → Is there a friendly/empty coastal territory adjacent to unload?
-        Yes → "UNLOAD: land [units] from [SZ] at [territory]"
-              "RETURN: move empty transport from [SZ] → 6 Sea Zone"
-        No  → "HOLD: transport at [SZ] with [units] — land next round"
-
-  PRIORITY 2 — RETURN EMPTY FRONTLINE TRANSPORTS
-    For each sea zone with an EMPTY Japanese transport (not in 6 SZ):
-      → "RETURN: move empty transport from [SZ] → 6 Sea Zone"
-
-  PRIORITY 3 — GROUND FORCE REDEPLOYMENT
-    Goal: move surplus units from low-threat rear toward frontline staging territories.
-    a) Identify rear territories with units but NO adjacent enemies (e.g. Manchuria, Shantung if secured).
-    b) For each NEXT ROUND TARGET, identify staging territory and unit deficit.
-    c) Plan move chains: rear → mid → staging territory.
-       Example: "2 inf from Manchuria → Shantung → Kiangsu → Kiangsi (staging for Kwangtung)"
-    d) After pulling units, verify each territory keeps >= 1 infantry.
-       If not → backfill from its neighbor.
-    e) Backfill territories thinned by THIS ROUND ATTACKS.
-
-    Output all ground moves:
-      Move 1: [X units] from [Origin] → [Destination] — Reason: [why]
-      Move 2: ...
-
-  PRIORITY 4 — LOAD & DISPATCH FROM 6 SEA ZONE
-    For each EMPTY transport in 6 Sea Zone:
-      → If Japan has land units available:
-        Pick cargo (priority: armour > inf+art > 2 inf)
-        Choose destination SZ adjacent to a NEXT ROUND TARGET's coast:
-          target on China coast → 19 or 20 SZ
-          target Kwangtung/Kwangsi → 36 SZ
-          target FIC/Burma → 36 or 37 SZ
-        "LOAD: [units] from Japan onto transport at 6 SZ → dispatch to [SZ] (for [target])"
-      → If Japan has no land units:
-        "IDLE: transport at 6 SZ — no cargo until next purchase"
+  Purchase plan (budget: {pus} PUs):
+    - Transport check: if land units at home ≥ 4 and transports ≤ 2 → buy transports
+    - Units needed for NEXT ROUND targets
+    - Backfill territories thinned by attacks
+    - Placement: which factory gets which units
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-PURCHASE PLAN (serves NEXT round, not this round):
-  Units bought now are placed at end of turn — they cannot move or fight until next round.
-  Budget: {pus} PUs
-
-  ISLAND TRAP CHECK (evaluate first):
-    japan_land = land units currently on Japan territory
-    total_transports = all Japanese transports across all sea zones
-    IF japan_land ≥ 4 AND total_transports ≤ 2 → buy 2 transports FIRST
-    IF japan_land ≥ 6 AND total_transports ≤ 3 → buy 1 transport FIRST
-    Every unit on Japan = ZERO combat value. Transport deficit must be resolved before buying land units.
-
-  Decision logic (after transport check):
-    1. Transport check: if total Japanese transports < 3 → buy 1-2 transports FIRST (7 PU each)
-    2. For each NEXT ROUND TARGET: how many additional units are needed at the staging territory?
-       Those units must be placed at a factory (Japan/Manchuria) and will take 1-2 rounds to arrive.
-    3. Backfill: if THIS ROUND ATTACKS will leave territories thin, buy replacement infantry.
-    4. Spend remaining PUs on armour (best transport value) > artillery > infantry.
-    5. Leave at most 2 PUs unspent.
-
-  Output:
-    Items: [unit list with per-unit cost and total]
-    Placement plan: [which units go to which factory territory in Place phase]
-    Reason: [how these units serve next round's attacks and staging]
-
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-
-Output the complete plan now. Be concrete — no vague statements.
+Be concrete — territory names, unit counts, force ratios. No vague statements.
 """
 
 
 def _generate_round_plan(
     round_num: int,
-    strategic_goal: str,
+    plan_tracker: list[StrategicPlan],
     prev_round_summaries: list[str] | None = None,
     rag_context: str = "",
 ) -> str:
     """
-    Layer 2: Generate a unified Round Plan before the phase loop.
-    One LLM call (~2000 tokens) that coordinates Purchase/Combat/NCM.
+    Layer 2: Generate a unified Round Plan that advances active Strategic Plans.
+    One LLM call that coordinates Purchase/Combat/NCM, referencing the plan tracker.
     """
     state = _client.get_state()
     compressed = _compress_state_for_llm(state)
     pus = state.get("japan", {}).get("pus", "?")
 
     stage = "Early" if round_num <= 3 else ("Mid" if round_num <= 6 else "Late")
+
+    # Build plans section from active plans
+    plans_lines = []
+    for p in plan_tracker:
+        if p.status != "active":
+            continue
+        progress_str = "; ".join(p.progress[-3:]) if p.progress else "(no progress yet)"
+        plans_lines.append(
+            f"[{p.plan_id}] {p.name} (target round {p.target_round})\n"
+            f"  Reason: {p.reason}\n"
+            f"  Actions: {'; '.join(p.actions)}\n"
+            f"  Expected: {p.expected_outcome}\n"
+            f"  Progress: {progress_str}"
+        )
+    plans_section = "\n\n".join(plans_lines) if plans_lines else "(no active plans)"
 
     prev_section = ""
     if prev_round_summaries:
@@ -1847,12 +1724,11 @@ def _generate_round_plan(
     prompt = _ROUND_PLAN_PROMPT.format(
         round_num=round_num,
         stage=stage,
-        strategic_goal=strategic_goal,
         pus=pus,
+        plans_section=plans_section,
         compressed_state=compressed,
         prev_rounds_section=prev_section,
         rag_section=rag_section,
-        next_round=round_num + 1,
     )
 
     try:
@@ -1906,8 +1782,8 @@ def _summarize_round(round_num: int, game_log: list[str]) -> str:
 # Layer 3 — Strategic Reassessment (every 2 rounds)
 # ─────────────────────────────────────────────────────────────
 
-_STRATEGY_REASSESS_PROMPT = """You are Japan's supreme strategist in Axis & Allies Pacific 1940.
-Round: {round_num} | Current Strategy: {current_goal}
+_STRATEGY_REASSESS_PROMPT = """You are the supreme strategist in Axis & Allies Pacific 1940.
+Round: {round_num}
 
 Board state:
 {compressed_state}
@@ -1915,42 +1791,55 @@ Board state:
 History:
 {round_summaries}
 
-Evaluate the current strategic direction. Consider:
-1. Is the primary target (India/DEI/Pacific) achievable within 2-3 rounds?
-2. Are enemy defenses too strong on the current axis of advance?
-3. Is there a better opportunity elsewhere (weaker enemy, higher IPC value)?
+Current Strategic Plans:
+{plans_text}
 
-Output EXACTLY this format:
+Evaluate each active plan:
+1. Is it ON TRACK, BEHIND SCHEDULE, or BLOCKED?
+2. Should it be CONTINUED, MODIFIED, or ABANDONED?
+3. Are there NEW opportunities visible on the board that warrant a new plan?
 
-STRATEGIC ASSESSMENT — Round {round_num}
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-Current Goal: {current_goal}
-Status: [ON TRACK / BEHIND SCHEDULE / BLOCKED]
-Reason: [1 sentence — why this status?]
-Recommendation: [CONTINUE / PIVOT]
-New Goal: [same as current if CONTINUE, or new goal if PIVOT — choose from: "Southern Expansion", "Pacific Dominance", "China Consolidation", "DEI Resource Grab"]
-Key Adjustment: [1 concrete change, e.g. "Shift 60% of purchases to naval units" or "No change needed"]
+For each plan, output:
+  [plan_id] STATUS: ON TRACK / BEHIND / BLOCKED
+  [plan_id] ACTION: CONTINUE / MODIFY: <what to change> / ABANDON: <reason>
+
+If you want to ADD a new plan, output:
+  NEW PLAN: <name> | reason: <why> | actions: <what to do> | target_round: <N>
+
+Be concrete — reference territory names, unit counts, force ratios.
 """
 
 
 def _reassess_strategy(
     round_num: int,
-    current_goal: str,
+    plan_tracker: list[StrategicPlan],
     round_summaries: list[str],
-) -> str:
+) -> list[StrategicPlan]:
     """
-    Layer 3: Reassess strategic direction every 2 rounds.
-    Returns the (possibly updated) strategic goal string.
+    Layer 3: Reassess strategic plans every 2 rounds.
+    Can modify, abandon, or add plans. Returns updated plan list.
     """
     state = _client.get_state()
     compressed = _compress_state_for_llm(state)
     summaries_text = "\n".join(round_summaries) if round_summaries else "(first assessment)"
 
+    plans_lines = []
+    for p in plan_tracker:
+        if p.status != "active":
+            continue
+        progress_str = "; ".join(p.progress[-3:]) if p.progress else "(no progress yet)"
+        plans_lines.append(
+            f"  [{p.plan_id}] {p.name} — target round {p.target_round}\n"
+            f"    Progress: {progress_str}\n"
+            f"    Expected: {p.expected_outcome}"
+        )
+    plans_text = "\n".join(plans_lines) if plans_lines else "(no active plans)"
+
     prompt = _STRATEGY_REASSESS_PROMPT.format(
         round_num=round_num,
-        current_goal=current_goal,
         compressed_state=compressed,
         round_summaries=summaries_text,
+        plans_text=plans_text,
     )
 
     try:
@@ -1965,19 +1854,201 @@ def _reassess_strategy(
             print(f"  {Colors.MAGENTA}{line}{Colors.RESET}")
         print(f"{Colors.MAGENTA}{'━'*60}{Colors.RESET}\n")
 
-        new_goal = current_goal
+        # Parse abandon directives
         for line in text.split("\n"):
-            if line.strip().startswith("New Goal:"):
-                candidate = line.split(":", 1)[1].strip().strip('"').strip("'")
-                if candidate and candidate != current_goal:
-                    new_goal = candidate
-                    print(f"  {Colors.MAGENTA}{Colors.BOLD}[Strategy] PIVOT: {current_goal} → {new_goal}{Colors.RESET}")
-                break
+            stripped = line.strip()
+            for p in plan_tracker:
+                if p.plan_id in stripped and "ABANDON" in stripped.upper():
+                    p.status = "abandoned"
+                    print(f"  {Colors.MAGENTA}[Strategy] ABANDONED: {p.name}{Colors.RESET}")
 
-        return new_goal
+        # Parse new plan directives
+        for line in text.split("\n"):
+            stripped = line.strip()
+            if stripped.upper().startswith("NEW PLAN:"):
+                parts = stripped.split("|")
+                name = parts[0].replace("NEW PLAN:", "").strip()
+                plan_id = f"sp_r{round_num}_{name[:10].lower().replace(' ', '_')}"
+                reason = ""
+                actions_str = ""
+                target = round_num + 3
+                for part in parts[1:]:
+                    kv = part.strip()
+                    if kv.lower().startswith("reason:"):
+                        reason = kv.split(":", 1)[1].strip()
+                    elif kv.lower().startswith("actions:"):
+                        actions_str = kv.split(":", 1)[1].strip()
+                    elif kv.lower().startswith("target_round:"):
+                        try:
+                            target = int(kv.split(":", 1)[1].strip())
+                        except ValueError:
+                            pass
+                new_plan = StrategicPlan(
+                    plan_id=plan_id,
+                    name=name,
+                    reason=reason,
+                    actions=[a.strip() for a in actions_str.split(";") if a.strip()],
+                    expected_outcome=f"(added at round {round_num} reassessment)",
+                    target_round=target,
+                    status="active",
+                    progress=[],
+                )
+                plan_tracker.append(new_plan)
+                print(f"  {Colors.MAGENTA}[Strategy] NEW PLAN: {name} (target round {target}){Colors.RESET}")
+
+        return plan_tracker
     except Exception as e:
         print(f"  {Colors.RED}[Strategy] Reassessment failed: {e}{Colors.RESET}")
-        return current_goal
+        return plan_tracker
+
+
+# ─────────────────────────────────────────────────────────────
+# Auto Place Units (programmatic — no LLM)
+# ─────────────────────────────────────────────────────────────
+
+_NAVAL_UNIT_TYPES = frozenset({
+    "transport", "destroyer", "submarine", "cruiser", "carrier", "battleship",
+})
+
+
+def _auto_place_units() -> str:
+    """
+    Place all purchased units without LLM. Strategy:
+      - Land/air units → first land territory in placeOptions (usually Japan)
+      - Naval units    → first sea zone in placeOptions (usually 6 Sea Zone)
+    Falls back to putting everything in the first available territory.
+    """
+    global _last_purchase
+    if not _last_purchase:
+        print(f"  {Colors.DIM}[Place] No purchase record — skipping{Colors.RESET}")
+        _client.act_end_turn()
+        return "No units to place."
+
+    state = _client.get_state()
+    place_options = state.get("placeOptions", [])
+    if not place_options:
+        print(f"  {Colors.DIM}[Place] placeOptions empty — skipping{Colors.RESET}")
+        _last_purchase.clear()
+        _client.act_end_turn()
+        return "No placement slots available."
+
+    land_territory = None
+    sea_territory = None
+    for opt in place_options:
+        name = opt.get("territory", "")
+        if "Sea Zone" in name and sea_territory is None:
+            sea_territory = name
+        elif "Sea Zone" not in name and land_territory is None:
+            land_territory = name
+
+    fallback = place_options[0].get("territory", "Japan")
+    if land_territory is None:
+        land_territory = fallback
+    if sea_territory is None:
+        sea_territory = fallback
+
+    placements: list[dict] = []
+    for item in _last_purchase:
+        ut = item.get("unitType", "")
+        count = item.get("count", 1)
+        dest = sea_territory if ut in _NAVAL_UNIT_TYPES else land_territory
+        placements.append({"territory": dest, "unitType": ut, "count": count})
+
+    result = _client.act({"type": "PLACE_UNITS", "placements": placements})
+    summary_parts = [f"{p['count']}x {p['unitType']} → {p['territory']}" for p in placements]
+    summary = ", ".join(summary_parts)
+
+    if result.get("ok"):
+        print(f"  {Colors.GREEN}[Place] Auto-placed: {summary}{Colors.RESET}")
+    else:
+        err = result.get("error", "unknown")
+        print(f"  {Colors.RED}[Place] Placement failed ({err}), trying end_turn anyway{Colors.RESET}")
+
+    _last_purchase.clear()
+    _client.act_end_turn()
+    return f"Auto-placed: {summary}"
+
+
+# ─────────────────────────────────────────────────────────────
+# Purchase Advisor (programmatic — injected before Purchase phase)
+# ─────────────────────────────────────────────────────────────
+
+_HEAVY_TYPES = frozenset({"armour", "artillery", "mech_infantry"})
+_LAND_TYPES = frozenset({"infantry", "armour", "artillery", "mech_infantry"})
+
+
+def _compute_purchase_advice(state: dict) -> str:
+    """
+    Human-style purchase logic:
+      1. How many transports do I need to clear the Japan stockpile in ~2 rounds?
+      2. Buy transports to reach that target.
+      3. ALL remaining PU → tank+infantry pairs (9 PU each). No standalone infantry.
+    """
+    japan_info = state.get("japan", {})
+    pus = japan_info.get("pus", 0)
+    if pus <= 0:
+        return ""
+
+    # unitsByTerritory is flat: {"Japan": {"infantry": 5, "armour": 2}, "6 Sea Zone": {"transport": 3}}
+    units_by_terr = state.get("unitsByTerritory", {})
+
+    # Count ALL Japanese transports
+    total_transports = 0
+    for terr_name, unit_counts in units_by_terr.items():
+        if "Sea Zone" in terr_name:
+            total_transports += unit_counts.get("transport", 0)
+
+    # Count land units on Japan island
+    japan_units = units_by_terr.get("Japan", {})
+    japan_land = sum(japan_units.get(ut, 0) for ut in _LAND_TYPES)
+    japan_tanks = japan_units.get("armour", 0)
+
+    # Step 1: How many transports needed?
+    # Each transport ships 2 units/round. Target: clear stockpile in ~2 rounds.
+    # target_fleet * 2 * 2 >= japan_land → target_fleet >= japan_land / 4
+    target_fleet = max((japan_land + 3) // 4, 3)  # min 3 transports
+    buy_transports = max(0, target_fleet - total_transports)
+    # Don't spend ALL PU on transports — leave at least 18 PU (2 tank+inf pairs)
+    max_transport_budget = max(pus - 18, 0)
+    buy_transports = min(buy_transports, max_transport_budget // 7)
+    transport_cost = buy_transports * 7
+
+    # Step 2: Remaining PU → tank+infantry pairs ONLY (9 PU each)
+    remaining = pus - transport_cost
+    pairs = remaining // 9  # 1 armour (6) + 1 infantry (3)
+    leftover = remaining - pairs * 9
+    extra_inf = leftover // 3  # only if can't afford a pair
+
+    lines = [
+        f"Status: {japan_land} land units on Japan ({japan_tanks} tanks), "
+        f"{total_transports} transports, {pus} PUs"
+    ]
+
+    if buy_transports > 0:
+        lines.append(
+            f"⚠ STOCKPILE: {japan_land} units on Japan, only {total_transports} transports "
+            f"(can ship {total_transports * 2}/round, need {target_fleet * 2}/round)."
+        )
+        lines.append(
+            f"→ BUY {buy_transports} transport(s) ({transport_cost} PU) + "
+            f"{pairs} armour + {pairs} infantry ({pairs * 9} PU)"
+            + (f" + {extra_inf} extra infantry ({extra_inf * 3} PU)" if extra_inf else "")
+            + f" = {transport_cost + pairs * 9 + extra_inf * 3} PU total."
+        )
+    else:
+        lines.append(
+            f"→ BUY {pairs} armour + {pairs} infantry = {pairs * 9} PU "
+            f"(1 armour + 1 infantry per transport, optimal load)."
+        )
+        if extra_inf:
+            lines.append(f"  + {extra_inf} extra infantry with remaining {leftover} PU.")
+
+    if japan_tanks >= 3:
+        lines.append(
+            f"⚠ TANK PRIORITY: {japan_tanks} tanks on Japan — ship tanks FIRST this NCM!"
+        )
+
+    return "\n".join(lines)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -1986,17 +2057,17 @@ def _reassess_strategy(
 # ─────────────────────────────────────────────────────────────
 
 def run_full_turn(
-    rag_context: str = "No experience available, using base rules.",
+    rag_context: str = "",
     start_phase: str = "",
-    memory=None,
     round_num: int = 1,
-    strategic_goal: str = "Southern Expansion",
+    plan_tracker: list[StrategicPlan] | None = None,
     prev_round_summaries: list[str] | None = None,
 ) -> "list[str]":
     """
     Execute a complete Japan turn (or resume from a mid-turn phase).
     start_phase: logged phase name for display; actual execution follows get_phase().
-    prev_round_summaries: cross-round memory from previous rounds (Layer 2 support).
+    plan_tracker: active Strategic Plans (game-level, cross-round).
+    prev_round_summaries: cross-round memory from previous rounds.
     """
     import time as _time
 
@@ -2011,37 +2082,28 @@ def run_full_turn(
     print(f"{Colors.BOLD}  Japan turn start [{title}]{Colors.RESET}")
     print(f"{Colors.BOLD}{'='*60}{Colors.RESET}\n")
 
-    # ── Layer 2: Generate Round Plan before phase loop ──
+    # ── Layer 2: Generate Round Plan referencing active Strategic Plans ──
+    _active_plans = plan_tracker or []
     round_plan = _generate_round_plan(
         round_num=round_num,
-        strategic_goal=strategic_goal,
+        plan_tracker=_active_plans,
         prev_round_summaries=prev_round_summaries,
         rag_context=rag_context,
     )
 
-    _has_memory = memory is not None
-    _has_rag = (
-        rag_context
-        and rag_context.strip()
-        and rag_context.strip() != "No experience available, using base rules."
-    )
-    if _has_memory:
-        print(
-            f"  {Colors.GREEN}📚 Reflexion RAG: per-phase retrieval active (round={round_num})"
-            f" — injected into each phase instruction{Colors.RESET}\n"
-        )
-    elif _has_rag:
+    _has_rag = bool(rag_context and rag_context.strip())
+    if _has_rag:
         print(f"{Colors.GREEN}{'─'*60}{Colors.RESET}")
-        print(f"{Colors.GREEN}{Colors.BOLD}  📚 Reflexion Experience (injected into System Prompt){Colors.RESET}")
+        print(f"{Colors.GREEN}{Colors.BOLD}  📚 Strategic Experience (injected into Round Plan){Colors.RESET}")
         print(f"{Colors.GREEN}{'─'*60}{Colors.RESET}")
         ctx_lines = rag_context.strip().split("\n")
-        for line in ctx_lines[:30]:
+        for line in ctx_lines[:20]:
             print(f"  {Colors.GREEN}{line}{Colors.RESET}")
-        if len(ctx_lines) > 30:
+        if len(ctx_lines) > 20:
             print(f"  {Colors.DIM}  ...({len(ctx_lines)} lines, truncated){Colors.RESET}")
         print(f"{Colors.GREEN}{'─'*60}{Colors.RESET}\n")
     else:
-        print(f"  {Colors.DIM}[Reflexion] No experience available — using base rules{Colors.RESET}\n")
+        print(f"  {Colors.DIM}[RAG] No experience available — using base strategy{Colors.RESET}\n")
 
     # 日本一回合的标准阶段顺序，最后一个阶段完成 = 本轮结束
     _ROUND_END_PHASE = "japaneseEndTurn"
@@ -2072,6 +2134,8 @@ def run_full_turn(
         handler.current_phase = step_name
         handler.reset_phase_tracking()
         _state_cache.reset()
+        global _transports_used_this_phase
+        _transports_used_this_phase = 0
 
         # ── Phase banner (display.py) ─────────────────────────────
         _pnum  = _PHASE_NUMBER.get(step_name, 0)
@@ -2080,7 +2144,7 @@ def run_full_turn(
 
         instruction = get_phase_instruction(step_name)
 
-        # ── Layer 2: Inject Round Plan into every action phase ──
+        # ── Inject Round Plan into every action phase ──
         if round_plan and step_name in (
             "japanesePurchase", "japaneseCombatMove", "japaneseNonCombatMove", "japanesePlace",
         ):
@@ -2091,36 +2155,21 @@ def run_full_turn(
                 + instruction
             )
 
-        phase_rag_text = ""
-        if _has_memory:
-            q = _phase_rag_query(step_name, round_num, strategic_goal)
-            if q:
-                try:
-                    phase_rag_text = memory.retrieve(q, k=3)
-                except Exception as _re:
-                    phase_rag_text = ""
-                    print(f"  {Colors.DIM}[RAG] Retrieval failed: {_re}{Colors.RESET}")
-
-            if phase_rag_text and phase_rag_text.strip():
-                # Display via display.py (split lines → numbered ①②③)
-                _rag_display_lines = [
-                    ln.strip()
-                    for ln in phase_rag_text.strip().split("\n")
-                    if ln.strip()
-                ]
-                print_rag_context(_rag_display_lines)
-                instruction = (
-                    f"[Reflexion Experience for this phase]\n"
-                    f"{phase_rag_text.strip()}\n"
-                    f"{'─'*40}\n\n"
-                    + instruction
-                )
-            else:
-                print(
-                    f"  {Colors.DIM}[Reflexion] No matching experience for this phase{Colors.RESET}"
-                )
-        elif _has_rag:
-            print(f"  {Colors.GREEN}📚 Reflexion experience injected into System Prompt{Colors.RESET}")
+        # ── Purchase advice injection: match transport capacity ──
+        if step_name == "japanesePurchase":
+            try:
+                _pstate = _client.get_state()
+                _advice = _compute_purchase_advice(_pstate)
+                if _advice:
+                    print(f"  {Colors.CYAN}[Purchase Advisor] {_advice}{Colors.RESET}")
+                    instruction = (
+                        f"╔══ PURCHASE ORDER (MANDATORY — buy EXACTLY this) ══╗\n"
+                        f"{_advice}\n"
+                        f"╚══════════════════════════════════════════════════════╝\n\n"
+                        + instruction
+                    )
+            except Exception as _pe:
+                print(f"  {Colors.DIM}[Purchase] Advisor error: {_pe}{Colors.RESET}")
 
         # ── Transport capacity injection for Combat Move (Bug 3) ──
         if step_name == "japaneseCombatMove":
@@ -2177,6 +2226,29 @@ def run_full_turn(
                     print(f"  {Colors.RED}[Battle] Safety limit: {_battle_count} end_turn calls, forcing advance{Colors.RESET}")
                     break
             output = f"Battle phase complete ({_battle_count} battle(s) resolved)."
+            log_entry = f"[{step_name}] {output}"
+            game_log.append(log_entry)
+            completed_phases.append(step_name)
+            continue
+
+        # ── Place Units: programmatic — no LLM needed ──
+        if step_name == "japanesePlace":
+            output = _auto_place_units()
+            # Poll for phase advance (same as normal phases)
+            _place_advanced = False
+            for _poll in range(10):
+                _time.sleep(0.3)
+                try:
+                    _next = _client.get_phase()
+                except Exception:
+                    _next = step_name
+                if _next != step_name:
+                    _place_advanced = True
+                    break
+            if not _place_advanced and _client.is_our_turn():
+                print(f"  {Colors.RED}[Place] Phase did not advance — forcing END_TURN{Colors.RESET}")
+                _client.act_end_turn()
+                _time.sleep(1)
             log_entry = f"[{step_name}] {output}"
             game_log.append(log_entry)
             completed_phases.append(step_name)
