@@ -14,7 +14,7 @@ The agent improves through three layers of feedback operating at increasing time
 
 ```
   Time Scale        Layer                    Feedback Loop
-  ─────────────────────────────────────────────────────────────
+  ───────────────────────────────────────────────────────────────────────────────
 
   Per Phase    ┌─────────────────────┐
                │  L1  Phase          │   Agent acts → Criticizer checks
