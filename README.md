@@ -2,59 +2,66 @@
 
 # Reflexion-Wargame-Agent
 
-A self-evolving wargame AI agent that learns from its own gameplay experience. Built on LLMs with a **hierarchical Reflexion** framework, **hybrid RAG** retrieval, and a **Criticizer** process supervisor — achieving interpretable, training-free strategic reasoning in TripleA's *World War II Pacific 1940* scenario.
+A self-evolving wargame AI agent that learns from its own gameplay experience. Built on LLMs with a **3-layer Reflexion** framework and **hybrid RAG** retrieval — achieving interpretable, training-free strategic reasoning in TripleA's *World War II Pacific 1940* scenario.
 
 <p align="center">
   <img src="assets/gitowl.png" width="100">
 </p>
 
-## Architecture Overview
+## 3-Layer Reflexion Architecture
+
+The agent improves through three layers of feedback operating at increasing time scales:
 
 ```
-┌─────────────────────────────────────────────────────────────────┐
-│                        Game Loop (main.py)                      │
-│                                                                 │
-│  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐   │
-│  │ Purchase │───▶│  Combat  │───▶│   NCM    │───▶│  Place   │   │
-│  │          │    │  Move    │    │          │    │          │   │
-│  └──────────┘    └────┬─────┘    └────┬─────┘    └──────────┘   │
-│                       │               │                         │
-│                  ┌────▼───────────────▼────┐                    │
-│                  │   Criticizer Gate       │                    │
-│                  │  (blocks premature end) │                    │
-│                  └────────────────────────-┘                    │
-│                                                                 │
-│  Round Plan ◄── RAG retrieval ◄── Experience Pool               │
-│       ▲                                 ▲                       │
-│       │         ┌───────────────────────┤                       │
-│       │         │                       │                       │
-│  ┌────┴─────┐   │  ┌────────────────┐   │  ┌────────────────┐   │
-│  │  Board   │   │  │  Round-level   │───┘  │  Game-level    │   │
-│  │ Snapshot │───┘  │  Reflection    │      │  Reflection    │   │
-│  └──────────┘      └────────────────┘      └────────────────┘   │
-└─────────────────────────────────────────────────────────────────┘
+  Time Scale        Layer                    Feedback Loop
+  ─────────────────────────────────────────────────────────────
+
+  Per Phase    ┌─────────────────────┐
+   (seconds)   │  L1  Phase          │   Agent acts → Criticizer checks
+               │      Criticizer     │   → blocks if missed actions
+               └─────────┬───────────┘   → agent corrects → retry
+                          │
+  Per Round    ┌──────────▼──────────┐
+   (minutes)   │  L2  Round          │   Board snapshot diff → score dropped?
+               │      Reflection     │   → LLM generates tactical lesson
+               └─────────┬───────────┘   → stored in FAISS (same-game retrieval)
+                          │
+  Per Game     ┌──────────▼──────────┐
+   (hours)     │  L3  Game           │   Strategic plan review → structured lessons
+               │      Reflection     │   → experiences.json + national_strategy.json
+               └─────────┬───────────┘   → RAG retrieval in future games
+                          │
+               ┌──────────▼──────────┐
+               │  Hybrid RAG         │   BM25 + FAISS + RRF fusion
+               │  (Experience Pool)  │   → injected into Round Plan & phase prompts
+               └─────────────────────┘
 ```
 
-### Dual-Layer Reflexion
+### L1 — Phase Criticizer (per phase, real-time correction)
 
-| Layer | Trigger | What it does | Gate |
-|-------|---------|-------------|------|
-| **Round-level** | After each round  | Compares board snapshots; if score dropped or territory lost, LLM generates a tactical lesson → immediately indexed for same-game retrieval | Score improvement + new territory = skip |
-| **Game-level** | After full game  | Structured review of each strategic plan's execution → lessons persisted to `experiences.json` and `national_strategy.json` for cross-game learning | Always runs |
-
-### Hybrid RAG (BM25 + FAISS + RRF)
-
-Experience retrieval combines semantic search (FAISS) and keyword search (BM25) fused via Reciprocal Rank Fusion. Retrieved lessons are injected into:
-- **Round Plan** — before each round (Configs B, C)
-- **Phase instructions** — during Combat Move and NCM (Config C only)
-
-### Criticizer Process Supervisor
-
-An LLM-based gate embedded in `tool_end_turn()` that **blocks** premature phase advancement:
+A gate embedded in `tool_end_turn()` that **blocks** premature phase advancement and provides actionable instructions:
 
 - **Combat Move**: Detects unattacked empty territories (free captures) and loaded transports that haven't performed amphibious assaults
 - **NCM**: Detects idle transports and undeployed ground troops on Japan
 - **Plan Generation**: Validates that new strategic plans target the China conquest objective
+
+No persistent experience is generated — correction happens in-place within the same phase.
+
+### L2 — Round Reflection (per round, intra-game learning)
+
+After each round, compares `BoardSnapshot` (score, territory control, army value). If score dropped or no new territory was captured, an LLM generates a concrete tactical lesson:
+
+> *"Round 2: 8 infantry idle on Japan with only 1 transport. Must buy 2 transports in round 1 to ship 4 units/round."*
+
+Lessons are immediately indexed into FAISS — subsequent rounds **within the same game** can retrieve them via RAG.
+
+### L3 — Game Reflection (per game, cross-game evolution)
+
+After the full game ends, each strategic plan receives a structured review (`StrategicPlanReview`). Lessons are persisted to:
+- `experiences.json` — long-term experience storage
+- `national_strategy.json` — updates plan confidence, known risks, and lessons learned
+
+Future games retrieve these lessons via **hybrid RAG** (BM25 keyword search + FAISS semantic search, fused with Reciprocal Rank Fusion) and inject them into Round Plans and phase instructions.
 
 ---
 
@@ -65,11 +72,11 @@ Three configurations for controlled experiments:
 | Capability | A (Baseline) | B (RAG) | C (Full) |
 |:-----------|:---:|:---:|:---:|
 | Round Plan generation | ✓ | ✓ | ✓ |
-| Game-level reflection + storage | — | ✓ | ✓ |
+| L3 — Game Reflection + storage | — | ✓ | ✓ |
 | RAG injection into Round Plan | — | ✓ | ✓ |
-| Round-level reflection | — | — | ✓ |
+| L2 — Round Reflection | — | — | ✓ |
+| L1 — Phase Criticizer | — | — | ✓ |
 | Per-phase RAG injection | — | — | ✓ |
-| Criticizer gate | — | — | ✓ |
 
 ```bash
 python main.py --config A   # Baseline
@@ -187,7 +194,7 @@ python main.py --clean             # Clear experience pool before start
 |------|-------------|
 | `--config A` | Baseline — no reflection, no RAG |
 | `--config B` | RAG — game-level reflection + experience retrieval |
-| `--config C` | Full — round + game reflection, criticizer, per-phase RAG |
+| `--config C` | Full — L1 + L2 + L3 reflexion, per-phase RAG |
 | `--clean` | Delete `exp_index/` and `experiences.json` (use when switching configs) |
 
 ---
