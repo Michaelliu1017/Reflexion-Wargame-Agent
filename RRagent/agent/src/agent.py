@@ -34,6 +34,13 @@ LLM_MODEL = "gpt-4o" #gpt-5.1
 
 JAPAN_LOADING_ZONE = "6 Sea Zone"
 
+_CHINA_TERRITORIES = [
+    "Manchuria", "Jehol", "Shantung", "Kiangsu", "Kiangsi", "Kwangtung",
+    "Kwangsi", "Chahar", "Anhwe", "Hunan", "Yunnan", "Hopei",
+    "Kweichow", "Szechwan", "Shensi", "Suiyuan", "Kansu", "Tsinghai", "Sikang",
+]
+_CHINA_TERRITORIES_LOWER = {t.lower() for t in _CHINA_TERRITORIES}
+
 
 # ─────────────────────────────────────────────────────────────
 # Terminal colors
@@ -103,11 +110,13 @@ class QuietCallbackHandler(BaseCallbackHandler):
         self._active: dict[str, str] = {}
         self.current_phase: str = ""
         self.move_tools_called: list[str] = []
-        self.last_llm_output: str = ""   # stores last LLM reasoning for plan extraction
+        self.last_llm_output: str = ""
+        self.attack_destinations: set[str] = set()
 
     def reset_phase_tracking(self) -> None:
         self.move_tools_called = []
         self.last_llm_output = ""
+        self.attack_destinations = set()
 
     # Color scheme: GREEN=Reflexion, CYAN=reasoning/thinking, WHITE=everything else
     _W = Colors.WHITE   # default output
@@ -234,10 +243,18 @@ class QuietCallbackHandler(BaseCallbackHandler):
             print(f"\n  {self._C}{Colors.BOLD}▶ Decision:{Colors.RESET} {self._W}{output[:500]}{Colors.RESET}")
 
     def on_agent_action(self, action: Any, **kwargs: Any) -> None:
-        # Track move tools here (on_tool_start may not fire in create_tool_calling_agent)
         tool_name = getattr(action, "tool", "")
         if tool_name in ("tool_move_units", "tool_transport_units"):
             self.move_tools_called.append(tool_name)
+        if tool_name == "tool_move_units" and self.current_phase == "japaneseCombatMove":
+            try:
+                tool_input = getattr(action, "tool_input", {})
+                if isinstance(tool_input, dict):
+                    dest = tool_input.get("to_territory", "")
+                    if dest and "Sea Zone" not in dest:
+                        self.attack_destinations.add(dest)
+            except Exception:
+                pass
         log = getattr(action, "log", "").strip()
         if log and len(log) > 5:
             display = log[:300] + "…" if len(log) > 300 else log
@@ -259,6 +276,14 @@ _last_purchase: list[dict] = []
 
 # Transport usage tracking per phase — counts how many transports were dispatched this NCM
 _transports_used_this_phase: int = 0
+
+# Dedup tracker: detects repeated identical tool_move_units calls within a phase
+_move_dedup: dict[str, int] = {}   # key = "from|to|units_json" → call count
+_MOVE_DEDUP_LIMIT = 2              # reject after this many identical calls
+
+# Criticizer gate: blocks tool_end_turn once per phase to surface missed opportunities
+_criticizer_gate_fired: dict[str, bool] = {}  # phase_name → already fired
+_criticizer_enabled: bool = False  # set by run_full_turn based on config
 
 
 # ─────────────────────────────────────────────────────────────
@@ -772,7 +797,139 @@ def tool_predict_battle_odds(attacker_json: str, defender_json: str) -> str:
         return json.dumps({"error": str(e)})
 
 
-@tool(return_direct=True)
+def _scan_free_captures_for_gate() -> str:
+    """Scan for missed combat opportunities:
+    1. Undefended Chinese territories adjacent to Japanese land forces
+    2. Loaded transports in sea zones that haven't performed amphibious assaults
+    Returns a formatted string of opportunities, or empty string."""
+    try:
+        state = _client.get_state()
+    except Exception:
+        return ""
+
+    units_by_terr: dict = state.get("unitsByTerritory", {})
+    terr_map = {t["name"]: t for t in state.get("territories", [])}
+    lines: list[str] = []
+
+    # --- 1. Free captures: undefended Chinese territories adjacent to JP land ---
+    for t in state.get("territories", []):
+        name = t.get("name", "")
+        owner = (t.get("owner", "") or "").lower()
+        if owner != "chinese" or name.lower() not in _CHINA_TERRITORIES_LOWER:
+            continue
+        all_units = t.get("unitsSummary", {})
+        jp_here = units_by_terr.get(name, {})
+        defenders = sum(
+            max(cnt - jp_here.get(ut, 0), 0)
+            for ut, cnt in all_units.items() if ut not in _INFRA_KEYS
+        )
+        if defenders > 0:
+            continue
+        for nb in t.get("neighbors", []):
+            nb_info = terr_map.get(nb, {})
+            if nb_info.get("isWater", False):
+                continue
+            nb_owner = (nb_info.get("owner", "") or "").lower()
+            if nb_owner not in ("japanese", "japan"):
+                continue
+            jp_units = units_by_terr.get(nb, {})
+            ground = sum(
+                v for k, v in jp_units.items()
+                if k not in _SEA_AIR_UNIT_TYPES and k not in _INFRA_KEYS and v > 0
+            )
+            if ground >= 2:
+                pu = t.get("puValue", 0)
+                lines.append(
+                    f"  {name} (0 defenders, +{pu} IPC) ← send 1 infantry from {nb}"
+                )
+                break
+
+    # --- 2. Loaded transports not yet used for amphibious assault ---
+    for sz_name, units in units_by_terr.items():
+        sz_info = terr_map.get(sz_name, {})
+        if not sz_info.get("isWater", False):
+            continue
+        tp = units.get("transport", 0)
+        if tp <= 0:
+            continue
+        ground = {k: v for k, v in units.items()
+                  if k not in _SEA_AIR_UNIT_TYPES and k not in _INFRA_KEYS and v > 0}
+        if not ground:
+            continue
+        ground_str = ", ".join(f"{v}x {k}" for k, v in ground.items())
+        # Find adjacent enemy coastal territories for amphibious assault
+        enemy_coasts = []
+        for nb in sz_info.get("neighbors", []):
+            nb_info = terr_map.get(nb, {})
+            if nb_info.get("isWater", False):
+                continue
+            nb_owner = (nb_info.get("owner", "") or "").lower()
+            if nb_owner not in ("japanese", "japan", ""):
+                nb_name = nb_info.get("name", nb)
+                enemy_coasts.append(nb_name)
+        if enemy_coasts:
+            targets_str = ", ".join(enemy_coasts)
+            lines.append(
+                f"  AMPHIBIOUS: {sz_name} has {tp} transport(s) loaded with [{ground_str}] — "
+                f"MUST land troops! Call tool_move_units(\"{sz_name}\", \"<target>\", units_json) "
+                f"to unload onto enemy coast. Targets: {targets_str}"
+            )
+
+    return "\n".join(lines)
+
+
+def _scan_ncm_issues_for_gate() -> str:
+    """Check for loaded transports needing unload, empty transports, and idle troops on Japan.
+    Returns a formatted string of issues, or empty string."""
+    try:
+        state = _client.get_state()
+    except Exception:
+        return ""
+
+    units_by_terr: dict = state.get("unitsByTerritory", {})
+    terr_map = {t["name"]: t for t in state.get("territories", [])}
+    lines: list[str] = []
+
+    for sz_name, units in units_by_terr.items():
+        info = terr_map.get(sz_name, {})
+        if not info.get("isWater", False):
+            continue
+        tp = units.get("transport", 0)
+        if tp <= 0:
+            continue
+        ground = {k: v for k, v in units.items()
+                  if k not in _SEA_AIR_UNIT_TYPES and k not in _INFRA_KEYS and v > 0}
+        if ground:
+            ground_str = ", ".join(f"{v}x {k}" for k, v in ground.items())
+            # Find adjacent land territories for unloading
+            neighbors = info.get("neighbors", [])
+            land_targets = []
+            for nb in neighbors:
+                nb_info = terr_map.get(nb, {})
+                if not nb_info.get("isWater", False):
+                    land_targets.append(nb_info.get("name", nb))
+            targets_str = ", ".join(land_targets) if land_targets else "unknown"
+            lines.append(
+                f"  {sz_name}: {tp} transport(s) LOADED with [{ground_str}] — "
+                f"MUST unload! Call tool_move_units(\"{sz_name}\", \"<target>\", units_json) "
+                f"to land troops. Adjacent coasts: {targets_str}. "
+                f"Then return transport to {JAPAN_LOADING_ZONE}."
+            )
+        else:
+            lines.append(f"  {sz_name}: {tp} transport(s) EMPTY — load troops!")
+
+    jp_units = units_by_terr.get("Japan", {})
+    troops = sum(jp_units.get(ut, 0) for ut in ("infantry", "artillery", "armour", "mech_infantry"))
+    if troops > 1:
+        lines.append(
+            f"  Japan: {troops} ground units idle (only 1 garrison needed) "
+            f"— load onto transports with tool_transport_units"
+        )
+
+    return "\n".join(lines)
+
+
+@tool
 def tool_end_turn() -> str:
     """
     *** FINAL action in every phase. Call this LAST. ***
@@ -780,7 +937,53 @@ def tool_end_turn() -> str:
     Ends the current phase and advances the game to the next one.
     This tool returns your phase summary directly as the Final Answer.
     After calling this tool, execution stops automatically — do NOT call any other tool.
+
+    NOTE: During Combat Move and NCM, this tool may REJECT your end_turn
+    if the Criticizer detects missed opportunities. In that case, follow the
+    instructions in the error message, then call tool_end_turn() again.
     """
+    global _criticizer_gate_fired
+
+    try:
+        current_phase = _client.get_phase()
+    except Exception:
+        current_phase = ""
+
+    # ── Combat Move gate: check for free captures and missed attacks ──
+    if (current_phase == "japaneseCombatMove"
+            and _criticizer_enabled
+            and not _criticizer_gate_fired.get("combat")):
+        missed = _scan_free_captures_for_gate()
+        if missed:
+            _criticizer_gate_fired["combat"] = True
+            print(f"\n  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+            print(f"  {Colors.YELLOW}{Colors.BOLD}  CRITICIZER GATE — BLOCKING END TURN{Colors.RESET}")
+            print(f"  {Colors.YELLOW}  Free captures available!{Colors.RESET}")
+            print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}\n")
+            return (
+                f"BLOCKED by Criticizer — you are leaving FREE territory on the table!\n\n"
+                f"{missed}\n\n"
+                f"Capture these territories FIRST (each has 0 defenders — send 1 infantry), "
+                f"then call tool_end_turn() again."
+            )
+
+    # ── NCM gate: check for idle transports and undeployed troops ──
+    if (current_phase == "japaneseNonCombatMove"
+            and _criticizer_enabled
+            and not _criticizer_gate_fired.get("ncm")):
+        ncm_issues = _scan_ncm_issues_for_gate()
+        if ncm_issues:
+            _criticizer_gate_fired["ncm"] = True
+            print(f"\n  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+            print(f"  {Colors.YELLOW}{Colors.BOLD}  CRITICIZER GATE — BLOCKING END TURN{Colors.RESET}")
+            print(f"  {Colors.YELLOW}  Deployment incomplete!{Colors.RESET}")
+            print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}\n")
+            return (
+                f"BLOCKED by Criticizer — deployment incomplete!\n\n"
+                f"{ncm_issues}\n\n"
+                f"Complete these deployments FIRST, then call tool_end_turn() again."
+            )
+
     result = _client.act_end_turn()
     ok = result.get("ok", False)
     status = "Phase ended successfully." if ok else f"End turn failed: {result.get('error', 'unknown')}"
@@ -1003,6 +1206,20 @@ def tool_move_units(from_territory: str, to_territory: str, units_json: str) -> 
     units_json:     format: [{"unitType": "infantry", "count": 2}]
     Call multiple times for different unit groups. Call tool_end_turn when done.
     """
+    # ── Dedup guard: reject repeated identical calls within the same phase ──
+    global _move_dedup
+    _dedup_key = f"{from_territory}|{to_territory}|{units_json}"
+    _move_dedup[_dedup_key] = _move_dedup.get(_dedup_key, 0) + 1
+    if _move_dedup[_dedup_key] > _MOVE_DEDUP_LIMIT:
+        return json.dumps({
+            "ok": False,
+            "error": (
+                f"BLOCKED: This exact move ({from_territory} → {to_territory}) has already been "
+                f"attempted {_MOVE_DEDUP_LIMIT} times this phase and failed. "
+                f"DO NOT retry — move on to your next action or call tool_end_turn()."
+            ),
+        }, ensure_ascii=False)
+
     try:
         units = json.loads(units_json) if isinstance(units_json, str) else units_json
     except json.JSONDecodeError as e:
@@ -1026,35 +1243,6 @@ def tool_move_units(from_territory: str, to_territory: str, units_json: str) -> 
                     f"Example: tool_transport_units('Japan', '{JAPAN_LOADING_ZONE}', '{to_territory}', units_json)"
                 ),
             }, ensure_ascii=False)
-
-    # Owner validation during Combat Move: prevent attacking own territories
-    current_phase = ""
-    try:
-        current_phase = _client.get_phase()
-    except Exception:
-        pass
-    if current_phase == "japaneseCombatMove" and "Sea Zone" not in to_territory:
-        try:
-            state = _state_cache.get()
-            if state is None:
-                state = _client.get_state()
-            territories = state.get("territories", [])
-            owner = ""
-            for _t in territories:
-                if _t.get("name") == to_territory:
-                    owner = _t.get("owner", "")
-                    break
-            if owner.lower() in ("japanese", "japan"):
-                return json.dumps({
-                    "ok": False,
-                    "error": (
-                        f"Blocked: {to_territory} is owned by {owner}. "
-                        f"Combat Move cannot target friendly territories. "
-                        f"Use Noncombat Move to reposition within friendly territory."
-                    ),
-                }, ensure_ascii=False)
-        except Exception:
-            pass
 
     # Auto-complete unload: when moving from sea zone to land, unload ALL ground units
     if "Sea Zone" in from_territory and "Sea Zone" not in to_territory and not only_transports:
@@ -1091,7 +1279,7 @@ def tool_move_units(from_territory: str, to_territory: str, units_json: str) -> 
 # ─────────────────────────────────────────────────────────────
 
 SYSTEM_PROMPT = """You are a professional player controlling Japan in Axis & Allies Pacific 1940.
-You interact with the game ONLY through tools. Never guess the board state — always call tool_get_state first.
+Your SOLE OBJECTIVE is to conquer China within 6 rounds. Ignore all other theaters.
 
 ╔══════════════════════════════════════════════════════════════╗
 ║  CRITICAL PROTOCOL — READ BEFORE ANYTHING ELSE               ║
@@ -1107,13 +1295,19 @@ You interact with the game ONLY through tools. Never guess the board state — a
 === JAPAN TURN PHASES (in order) ===
 1. Politics      — declare war or pass
 2. Purchase      — buy units (BUY_UNITS → END_TURN → STOP)
-3. Combat Move   — attack positions (PERFORM_MOVE × N → END_TURN → STOP)
+3. Combat Move   — attack Chinese territories (PERFORM_MOVE × N → END_TURN → STOP)
 4. Battle        — resolved automatically
-5. Noncombat Move— reposition/reinforce (PERFORM_MOVE × N → END_TURN → STOP)
+5. Noncombat Move— reinforce Chinese front (PERFORM_MOVE × N → END_TURN → STOP)
 6. Place Units   — handled automatically (no LLM needed)
 7. Collect Income— automatic
 
 You handle ONE phase per invocation. After END_TURN succeeds, your job is done.
+
+=== CHINA THEATER GOAL ===
+Win condition: control ≥80% of Chinese territories AND reduce Chinese army to ≤6 IPC value.
+Chinese territories (19 total): Manchuria, Jehol, Shantung, Kiangsu, Kiangsi, Kwangtung,
+  Kwangsi, Chahar, Anhwe, Hunan, Yunnan, Hopei, Kweichow, Szechwan, Shensi, Suiyuan, Kansu, Tsinghai, Sikang
+Each round you MUST capture at least one new Chinese territory or the campaign is stalling.
 
 === UNIT STATS ===
 infantry (inf)      3 PU  | Att 1  Def 2  Mov 1 | light unit (1 slot)
@@ -1122,53 +1316,21 @@ armour/tank         6 PU  | Att 3  Def 3  Mov 2 | heavy unit (1 slot)
 fighter             10 PU | Att 3  Def 4  Mov 4 | air unit — can land on carrier
 tac_bomber          11 PU | Att 3  Def 3  Mov 4 | +1 Att when paired with fighter or tank
 strategic_bomber    12 PU | Att 4  Def 1  Mov 6 | can strategic-bomb enemy factories
-destroyer           8 PU  | Att 2  Def 2  Mov 2 | counters submarines
 transport           7 PU  | Att —  Def —  Mov 2 | carries 1 heavy + 1 light (or 2 light)
-carrier             16 PU | Att 1  Def 2  Mov 2 | holds 2 fighters
-battleship          20 PU | Att 4  Def 4  Mov 2 | takes 2 hits
 
-Transport capacity: 1 heavy + 1 light (max 1 heavy unit per transport):
-  BEST: 1 armour + 1 inf (9 PU, Att 4) | 1 art + 1 inf (7 PU, Att 3) | 2 infantry (6 PU, Att 2)
-
-=== AIRCRAFT USAGE — CRITICAL ===
-Fighters and tactical bombers are powerful offensive assets Japan ignores too often.
-
-FIGHTER (attack 3, move 4):
-  - Can fly from Japan → Shantung → attack Kiangsi in one turn (4 zones range)
-  - Must land on a FRIENDLY territory after combat (within remaining movement)
-  - Pair with ground forces to push borderline attacks above 55% win rate
-  - After combat, reposition to forward base (Manchuria, Kiangsu, Shantung)
-
-TAC BOMBER (attack 3 solo / attack 4 when paired with fighter or tank):
-  - Always pair with a fighter or an attacking tank for the +1 attack boost
-  - Same movement rules as fighter
-
-HOW TO USE AIRCRAFT IN COMBAT:
-  1. Calculate ground force win rate (tool_predict_battle_odds)
-  2. If win rate is 40-55%, add 1-2 fighters to push above 55%
-  3. Move aircraft with tool_move_units in Combat Move phase
-  4. Ensure safe landing territory exists BEFORE committing aircraft
-  5. If no safe landing within range, do NOT send aircraft
-
-=== TANK (armour) USAGE — CRITICAL ===
-Tanks are Japan's highest-value ground unit.
-  - 1 tank + 1 inf on a transport = optimal load (Att 4 total, 9 PU)
-  - Use tanks to spearhead attacks on fortified territories
-  - Move 2 means tanks can exploit breakthroughs (move to captured territory)
-  - ALWAYS load 1 tank + 1 infantry per transport — never send a tank alone
+=== AIRCRAFT USAGE ===
+Fighters and tac_bombers are key to overcoming Chinese infantry stacks.
+  - Use tool_predict_battle_odds to check ground-only win rate
+  - If 40-55%, add fighters/tac_bombers to push above 55%
+  - Ensure safe landing territory within range BEFORE committing
+  - Reposition to forward bases (Manchuria, Kiangsu, Shantung) after combat
 
 === TRANSPORT CYCLING — MANDATORY EVERY ROUND ===
-Japan is an island. Troops on Japan = zero combat value.
-Transports are the ONLY way to project force to the mainland.
-
-NCM priority order:
-  1. UNLOAD: For each transit SZ with ground units — land troops, then return transport to 6 Sea Zone.
-  2. LOAD & DISPATCH: For each empty transport at 6 Sea Zone — load 1 armour + 1 infantry (best combo),
-     dispatch toward the current frontline (use neighbors in get_state to pick the right SZ).
-  3. Never leave an empty transport idle at 6 SZ when Japan has land units to ship.
-
-=== MAP TOPOLOGY ===
-Each territory in get_state includes a "neighbors" list — use it directly.
+Troops on Japan = zero combat value. Transports are the ONLY way to reinforce China.
+NCM priority:
+  1. UNLOAD: Land troops from transit SZ to Chinese coastal territory
+  2. LOAD & DISPATCH: Load 1 armour + 1 infantry per transport from Japan → dispatch to coast
+  3. Never leave an empty transport idle when Japan has land units to ship
 
 === RELEVANT RULES & EXPERIENCE ===
 {rag_context}
@@ -1242,9 +1404,8 @@ def build_agent(
 PHASE_INSTRUCTIONS = {
     "japanesePolitics": """
 === POLITICS PHASE ===
-Optionally declare war on a power, or do nothing.
-Warning: declaring war on UK also triggers war with ANZAC; any western declaration accelerates US entry.
-If you do not wish to declare war, call tool_end_turn() immediately.
+We are focused on conquering China. Do NOT declare war on UK/US/ANZAC unless already at war.
+Call tool_end_turn() immediately.
 
 ► STOP: After tool_end_turn() returns ok=true, output "Politics phase complete." and stop ALL tools.
 """,
@@ -1305,22 +1466,33 @@ MULTI-TARGET: Attack every target where ratio ≥ 1.5 — do NOT stop after one 
 Typical combat rounds should produce 2-4 attacks across multiple fronts.
 
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-FREE CAPTURE RULE (check FIRST, before any force ratio evaluation):
+AMPHIBIOUS ASSAULT (check FIRST — troops in transit MUST land):
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+After tool_get_state, check ALL Sea Zones for Japanese ground units (infantry, armour, etc.).
+If ANY sea zone has ground units on transports:
+  → These troops were loaded last round and are IN TRANSIT.
+  → They MUST land this Combat Move — call tool_move_units(sea_zone, enemy_coast, units_json).
+  → Example: 19 Sea Zone has 1 armour + 1 infantry → land on Kiangsu or Shantung.
+  → This is an amphibious attack — it counts as a combat move and triggers battle.
+  → Do this BEFORE evaluating other ground attacks.
+  → If no enemy coast is adjacent, move transport to a better sea zone.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+FREE CAPTURE RULE (check SECOND):
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 Scan ALL enemy territories adjacent to Japanese forces.
 If ANY enemy territory has 0 defenders (empty):
   → Capture it IMMEDIATELY with 1 infantry from the nearest adjacent territory.
   → Free IPC should NEVER be left on the table.
   → No battle odds needed — 0 defenders = guaranteed capture.
-  → Do this BEFORE evaluating other attacks.
 Example: Yunnan has 0 Chinese infantry → move 1 inf from Kwangsi to Yunnan. Done. +2 IPC.
 
 Tool budget:
   tool_get_state           × 1
   tool_predict_battle_odds × 0-6 (evaluate every borderline target)
-  tool_move_units          × 0-8 (ground + air moves for MULTIPLE targets)
+  tool_move_units          × 0-10 (amphibious + ground + air for MULTIPLE targets)
   tool_end_turn            × 1
-  ─────────── total max 16 calls ───────────
+  ─────────── total max 18 calls ───────────
 
 Step 1 (required, once only): tool_get_state
   Record: unit counts in all territories. Do not call again.
@@ -1340,8 +1512,9 @@ Step 2: evaluate ALL adjacent enemy territories. Decision rules:
     CRITICAL: verify fighters have a safe landing territory within range BEFORE attacking.
     Tac bombers: always pair with a fighter or an attacking tank (+1 attack bonus).
 
-  PRIORITY: Follow the active Strategic Plans (injected in Round Plan above).
-  If no plans: capture adjacent enemy territories with highest IPC value first.
+  PRIORITY: Only attack CHINESE territories. Ignore UK/US/ANZAC territories.
+  Follow the active Strategic Plans (injected in Round Plan above).
+  If no plans: capture adjacent Chinese territories with highest IPC value first.
 
   NOTES:
     - Move ground units AND aircraft in this phase. Aircraft must land after battle.
@@ -1407,25 +1580,28 @@ Call tool_end_turn() immediately.
 
     "japaneseNonCombatMove": """
 === NONCOMBAT MOVE PHASE === Budget: max 20 tool calls. Last call MUST be tool_end_turn().
+GOAL: Maximize troop flow from Japan to the Chinese front. Every idle unit is wasted.
 
 RULES: Move only between FRIENDLY territories. No attacks. If a tool returns ok=false, skip it.
+⚠ CRITICAL: If tool_move_units returns ok=false, NEVER retry the same move. Skip and move on.
+  Retrying identical failed moves wastes your budget and causes errors.
 TOOLS: tool_transport_units to load+dispatch, tool_move_units to unload/reposition.
 
 Step 1 (required): call tool_get_state once. Note:
-  A) Sea zones with Japanese ground units (troops in transit — need landing)
+  A) Sea zones with Japanese ground units (troops in transit — need landing on China coast)
   B) Empty transports in 6 Sea Zone (ready to load)
   C) Land units on Japan island (waiting for transport)
-  D) Rear areas (Manchuria, Korea) with idle units
+  D) Rear areas (Manchuria, Korea) with idle units that should push toward China
 
 EXECUTION ORDER:
-  1. UNLOAD: For each SZ with ground units → land troops to adjacent friendly territory,
+  1. UNLOAD: For each SZ with ground units → land troops to adjacent CHINESE coastal territory,
      then return transport to 6 Sea Zone.
-  2. REAR AUDIT: Move idle units from Manchuria/Korea toward the frontline (1 hop per round).
+  2. REAR AUDIT: Move idle units from Manchuria/Korea toward the Chinese frontline (1 hop per round).
      Keep only 1 infantry as garrison.
   3. LOAD & DISPATCH: For each empty transport in 6 SZ → load 1 armour + 1 infantry (optimal),
-     pick transit SZ near current frontline, call tool_transport_units per transport.
-  4. AIRCRAFT: Reposition fighters/tac bombers to forward bases within range.
-  5. CONSOLIDATION: Stage ground forces adjacent to next round's attack target
+     pick transit SZ near current Chinese frontline, call tool_transport_units per transport.
+  4. AIRCRAFT: Reposition fighters/tac bombers to forward bases within range of Chinese targets.
+  5. CONSOLIDATION: Stage ground forces adjacent to next round's Chinese attack target
      (follow the NONCOMBAT PLAN from Combat Move if available).
 
 Step N (required): call tool_end_turn().
@@ -1500,6 +1676,21 @@ def _invoke_with_retry(
 
         except Exception as e:
             err = str(e)
+
+            # Tool-call explosion: LLM generated too many parallel tool calls
+            # (e.g. 371x same move) and the next API call exceeds array limit.
+            # Unrecoverable within this conversation — force end_turn and move on.
+            if "array too long" in err or "array_above_max_length" in err:
+                print(
+                    f"  {Colors.RED}[Tool Explosion] LLM generated too many tool calls — "
+                    f"forcing END_TURN and moving on{Colors.RESET}"
+                )
+                try:
+                    _client.act_end_turn()
+                except Exception:
+                    pass
+                return f"Agent error: {err}"
+
             is_rate_limit = (
                 "429" in err
                 or "rate_limit_exceeded" in err
@@ -1538,8 +1729,126 @@ from memory import (
     load_national_strategy, ns_to_prompt_text,
 )
 
+from pydantic import BaseModel as _BaseModel, Field as _Field
+
+
+# ─────────────────────────────────────────────────────────────
+# Criticizer — LLM-based plan relevance gate
+# ─────────────────────────────────────────────────────────────
+
+class _PlanVerdict(_BaseModel):
+    """LLM verdict on whether a strategic plan serves the China conquest objective."""
+    plan_id: str = _Field(description="ID of the plan being evaluated")
+    accept: bool = _Field(
+        description=(
+            "True if the plan DIRECTLY serves conquering Chinese territories "
+            "(Manchuria, Jehol, Shantung, Kiangsu, Kiangsi, Kwangtung, Kwangsi, "
+            "Chahar, Anhwe, Hunan, Yunnan, Hopei, Kweichow, Szechwan, Shensi, "
+            "Suiyuan, Kansu, Tsinghai, Sikang). False if it targets any other theater."
+        )
+    )
+    reason: str = _Field(description="One-sentence explanation for the verdict")
+
+
+class _PlanVerdicts(_BaseModel):
+    verdicts: list[_PlanVerdict]
+
+
+_CRITICIZER_PROMPT = """You are a CRITICIZER reviewing strategic plans for Japan in Axis & Allies Pacific 1940.
+
+Japan's SOLE OBJECTIVE this game is to conquer China within 6 rounds.
+Chinese territories (19 total): Manchuria, Jehol, Shantung, Kiangsu, Kiangsi, Kwangtung,
+  Kwangsi, Chahar, Anhwe, Hunan, Yunnan, Hopei, Kweichow, Szechwan, Shensi, Suiyuan, Kansu, Tsinghai, Sikang
+
+For each plan below, decide:
+  accept=true  → plan DIRECTLY targets Chinese territories or supports troop flow TO China
+  accept=false → plan targets non-Chinese theaters (Pacific, India, Southeast Asia, naval dominance, etc.)
+
+Plans supporting China conquest INDIRECTLY (e.g. buying transports to ship troops to China coast)
+count as accept=true. Plans that mention China but primarily target other areas are accept=false.
+
+=== PLANS TO EVALUATE ===
+{plans_text}
+"""
+
+
+def _criticize_plans(plans: list[StrategicPlan]) -> list[StrategicPlan]:
+    """
+    LLM Criticizer: evaluate each plan for China-relevance.
+    Returns only accepted plans. Rejected plans are logged.
+    Falls back to keyword matching if LLM call fails.
+    """
+    if not plans:
+        return plans
+
+    plans_text = "\n".join(
+        f"- [{p.plan_id}] {p.name} | reason: {p.reason} | "
+        f"actions: {'; '.join(p.actions[:3])} | expected: {p.expected_outcome}"
+        for p in plans
+    )
+
+    try:
+        llm = ChatOpenAI(model=LLM_MODEL, temperature=0.0)
+        structured = llm.with_structured_output(_PlanVerdicts)
+        result = structured.invoke(
+            _CRITICIZER_PROMPT.format(plans_text=plans_text)
+        )
+
+        verdict_map = {v.plan_id: v for v in result.verdicts}
+        accepted = []
+        for p in plans:
+            v = verdict_map.get(p.plan_id)
+            if v and v.accept:
+                p.target_round = min(p.target_round, 6)
+                accepted.append(p)
+                print(
+                    f"  {Colors.GREEN}[Criticizer] ACCEPTED: '{p.name}' — {v.reason}{Colors.RESET}"
+                )
+            elif v:
+                print(
+                    f"  {Colors.YELLOW}[Criticizer] REJECTED: '{p.name}' — {v.reason}{Colors.RESET}"
+                )
+            else:
+                # LLM didn't return verdict for this plan — accept by default
+                p.target_round = min(p.target_round, 6)
+                accepted.append(p)
+                print(
+                    f"  {Colors.DIM}[Criticizer] No verdict for '{p.name}' — accepted by default{Colors.RESET}"
+                )
+        return accepted
+
+    except Exception as e:
+        print(f"  {Colors.RED}[Criticizer] LLM call failed ({e}) — falling back to keyword filter{Colors.RESET}")
+        _CHINA_KW = {
+            "china", "chinese", "manchuria", "kiangsu", "shantung", "anhwe",
+            "hopei", "chahar", "hunan", "kiangsi", "kwangtung", "kwangsi",
+            "jehol", "yunnan", "suiyuan", "kweichow", "kansu", "tsinghai",
+            "szechwan", "sikang", "shensi", "anhwe",
+        }
+        filtered = []
+        for p in plans:
+            text_check = (p.name + " " + p.reason + " " + p.expected_outcome).lower()
+            if any(kw in text_check for kw in _CHINA_KW):
+                p.target_round = min(p.target_round, 6)
+                filtered.append(p)
+            else:
+                print(
+                    f"  {Colors.YELLOW}[Criticizer/fallback] REJECTED: '{p.name}'{Colors.RESET}"
+                )
+        return filtered
+
+
 _INIT_PLANS_PROMPT = """You are the supreme strategist for {nation} in Axis & Allies Pacific 1940.
 Round 1 is about to begin.
+
+╔══════════════════════════════════════════════════════════════╗
+║  CONSTRAINT: ALL plans MUST target CHINESE territories.     ║
+║  Do NOT create plans for Southeast Asia, Pacific, India,    ║
+║  or any non-Chinese theater. China is the SOLE objective.   ║
+╚══════════════════════════════════════════════════════════════╝
+
+Chinese territories (19 total): Manchuria, Jehol, Shantung, Kiangsu, Kiangsi, Kwangtung,
+  Kwangsi, Chahar, Anhwe, Hunan, Yunnan, Hopei, Kweichow, Szechwan, Shensi, Suiyuan, Kansu, Tsinghai, Sikang
 
 === NATIONAL STRATEGY (from previous games) ===
 {ns_text}
@@ -1549,24 +1858,24 @@ Round 1 is about to begin.
 
 {nation} PUs: {pus}
 
-Based on the national strategy and the current board state, create 2-4 Strategic Plans
-for this game. Each plan should:
-1. Have a clear, specific objective (territory to capture, defensive line to hold, etc.)
-2. Include the REASON why this plan matters strategically
+Create 1-3 Strategic Plans for conquering China. Each plan should:
+1. Target specific CHINESE territories to capture
+2. Include the REASON why this plan matters for the China campaign
 3. List concrete ACTIONS needed (which units move where, what to purchase)
-4. State the EXPECTED OUTCOME with territory names and a target round
+4. State the EXPECTED OUTCOME with Chinese territory names and a target round (max 6)
 5. Be ordered by priority (plan 1 = most urgent)
 
 If the national strategy already has validated plans, adopt them with adjustments based
 on the current board state. If it has failed plans, learn from the lessons_learned.
 
-Plan IDs should be short descriptive strings like "sp_secure_coast", "sp_capture_fic".
+Plan IDs should be short descriptive strings like "sp_china_coast", "sp_china_interior".
 """
 
 
 def _initialize_strategic_plans(
     ns: dict,
     round_num: int = 1,
+    use_criticizer: bool = True,
 ) -> list[StrategicPlan]:
     """
     Game start: generate initial Strategic Plans from National Strategy + board state.
@@ -1590,6 +1899,10 @@ def _initialize_strategic_plans(
         structured = llm.with_structured_output(StrategicPlansInit)
         result = structured.invoke(prompt)
         plans = result.plans
+
+        # LLM Criticizer gate: verify every plan serves China conquest
+        if use_criticizer:
+            plans = _criticize_plans(plans)
 
         print(f"\n{Colors.CYAN}{'━'*60}{Colors.RESET}")
         print(f"{Colors.CYAN}{Colors.BOLD}  STRATEGIC PLANS INITIALIZED — {len(plans)} plans{Colors.RESET}")
@@ -1629,6 +1942,9 @@ _ROUND_PLAN_PROMPT = """You are planning a turn in Axis & Allies Pacific 1940.
 Round: {round_num} | Stage: {stage}
 PUs available: {pus}
 
+SOLE OBJECTIVE: Conquer China. Only plan attacks on CHINESE territories.
+Ignore all other theaters (Pacific, Southeast Asia, India).
+
 === ACTIVE STRATEGIC PLANS ===
 {plans_section}
 
@@ -1639,10 +1955,10 @@ PUs available: {pus}
 
 {rag_section}
 
-Your job: create a ROUND PLAN that advances the active Strategic Plans.
+Your job: create a ROUND PLAN that advances the active Strategic Plans toward conquering China.
 
 For each active plan, state:
-  - What progress can be made THIS round
+  - What progress can be made THIS round toward capturing Chinese territories
   - Which specific attacks/moves serve this plan
 
 Then generate the full execution plan using this 3-step chain of thought:
@@ -1751,20 +2067,40 @@ def _generate_round_plan(
 # Round Summary: compress a round's game_log into one paragraph
 # ─────────────────────────────────────────────────────────────
 
-def _summarize_round(round_num: int, game_log: list[str]) -> str:
+def _summarize_round(
+    round_num: int,
+    game_log: list[str],
+    pre_snap: "Any | None" = None,
+    post_snap: "Any | None" = None,
+) -> str:
     """
-    Layer 2 support: compress one round's game_log into a 2-3 line summary.
-    Uses a cheap model to minimize cost. Fed into next round's plan generation.
+    Layer 2 support: compress one round's game_log + board diff into a concise summary.
+    Injects quantitative territory/IPC data so summaries contain actionable information.
     """
     if not game_log:
         return f"Round {round_num}: No actions recorded."
 
+    diff_text = ""
+    if pre_snap is not None and post_snap is not None:
+        diff_text = post_snap.diff_summary(pre_snap)
+
     log_text = "\n".join(game_log[-20:])
     prompt = (
-        f"Summarize Japan's Round {round_num} in Axis & Allies Pacific 1940.\n"
+        f"Summarize Japan's Round {round_num} in Axis & Allies Pacific 1940.\n\n"
+    )
+    if diff_text:
+        prompt += (
+            f"Board state changes this round (QUANTITATIVE — use this data):\n"
+            f"{diff_text}\n\n"
+        )
+    prompt += (
         f"Game log:\n{log_text}\n\n"
-        f"Write exactly 2-3 sentences. Include: territories attacked/captured, "
-        f"units purchased, key troop movements, and IPC changes. Be specific with names and numbers."
+        f"Write exactly 2-3 sentences. You MUST include:\n"
+        f"  - Which Chinese territories were attacked and the result (captured/lost)\n"
+        f"  - How many territories Japan controls now vs last round\n"
+        f"  - Score change and why (territory gained = IPC up, army destroyed = score up)\n"
+        f"  - If NO territory was captured, state that explicitly and note what went wrong\n"
+        f"Be specific: territory names, unit counts, IPC values."
     )
 
     try:
@@ -1774,6 +2110,8 @@ def _summarize_round(round_num: int, game_log: list[str]) -> str:
         print(f"  {Colors.DIM}[Round Summary] {summary}{Colors.RESET}")
         return summary
     except Exception as e:
+        if diff_text:
+            return f"Round {round_num}: {diff_text}"
         print(f"  {Colors.DIM}[Round Summary] Failed: {e}{Colors.RESET}")
         return f"Round {round_num}: (summary unavailable)"
 
@@ -1784,6 +2122,12 @@ def _summarize_round(round_num: int, game_log: list[str]) -> str:
 
 _STRATEGY_REASSESS_PROMPT = """You are the supreme strategist in Axis & Allies Pacific 1940.
 Round: {round_num}
+
+╔══════════════════════════════════════════════════════════════╗
+║  CONSTRAINT: ALL plans MUST target CHINESE territories.     ║
+║  Do NOT create or suggest plans for non-Chinese theaters.   ║
+║  China is the SOLE objective. Max 6 rounds total.           ║
+╚══════════════════════════════════════════════════════════════╝
 
 Board state:
 {compressed_state}
@@ -1797,16 +2141,16 @@ Current Strategic Plans:
 Evaluate each active plan:
 1. Is it ON TRACK, BEHIND SCHEDULE, or BLOCKED?
 2. Should it be CONTINUED, MODIFIED, or ABANDONED?
-3. Are there NEW opportunities visible on the board that warrant a new plan?
+3. Are there NEW opportunities in CHINA visible on the board that warrant a new plan?
 
 For each plan, output:
   [plan_id] STATUS: ON TRACK / BEHIND / BLOCKED
   [plan_id] ACTION: CONTINUE / MODIFY: <what to change> / ABANDON: <reason>
 
-If you want to ADD a new plan, output:
+If you want to ADD a new plan (MUST target Chinese territories), output:
   NEW PLAN: <name> | reason: <why> | actions: <what to do> | target_round: <N>
 
-Be concrete — reference territory names, unit counts, force ratios.
+Be concrete — reference Chinese territory names, unit counts, force ratios.
 """
 
 
@@ -1814,6 +2158,7 @@ def _reassess_strategy(
     round_num: int,
     plan_tracker: list[StrategicPlan],
     round_summaries: list[str],
+    use_criticizer: bool = True,
 ) -> list[StrategicPlan]:
     """
     Layer 3: Reassess strategic plans every 2 rounds.
@@ -1862,7 +2207,8 @@ def _reassess_strategy(
                     p.status = "abandoned"
                     print(f"  {Colors.MAGENTA}[Strategy] ABANDONED: {p.name}{Colors.RESET}")
 
-        # Parse new plan directives
+        # Parse new plan directives, then run LLM Criticizer gate
+        candidate_plans = []
         for line in text.split("\n"):
             stripped = line.strip()
             if stripped.upper().startswith("NEW PLAN:"):
@@ -1871,7 +2217,7 @@ def _reassess_strategy(
                 plan_id = f"sp_r{round_num}_{name[:10].lower().replace(' ', '_')}"
                 reason = ""
                 actions_str = ""
-                target = round_num + 3
+                target = min(round_num + 3, 6)
                 for part in parts[1:]:
                     kv = part.strip()
                     if kv.lower().startswith("reason:"):
@@ -1880,10 +2226,10 @@ def _reassess_strategy(
                         actions_str = kv.split(":", 1)[1].strip()
                     elif kv.lower().startswith("target_round:"):
                         try:
-                            target = int(kv.split(":", 1)[1].strip())
+                            target = min(int(kv.split(":", 1)[1].strip()), 6)
                         except ValueError:
                             pass
-                new_plan = StrategicPlan(
+                candidate_plans.append(StrategicPlan(
                     plan_id=plan_id,
                     name=name,
                     reason=reason,
@@ -1892,14 +2238,266 @@ def _reassess_strategy(
                     target_round=target,
                     status="active",
                     progress=[],
-                )
-                plan_tracker.append(new_plan)
-                print(f"  {Colors.MAGENTA}[Strategy] NEW PLAN: {name} (target round {target}){Colors.RESET}")
+                ))
+
+        if candidate_plans:
+            accepted = _criticize_plans(candidate_plans) if use_criticizer else candidate_plans
+            for p in accepted:
+                plan_tracker.append(p)
+                print(f"  {Colors.MAGENTA}[Strategy] NEW PLAN: {p.name} (target round {p.target_round}){Colors.RESET}")
 
         return plan_tracker
     except Exception as e:
         print(f"  {Colors.RED}[Strategy] Reassessment failed: {e}{Colors.RESET}")
         return plan_tracker
+
+
+# ─────────────────────────────────────────────────────────────
+# Criticizer — detect drift between Round Plan and actual execution
+# ─────────────────────────────────────────────────────────────
+
+def _extract_planned_targets(round_plan: str) -> set[str]:
+    """Extract planned attack territory names from the round plan's ATTACK section."""
+    if not round_plan:
+        return set()
+    upper = round_plan.upper()
+    attack_idx = -1
+    for marker in ("THIS ROUND ATTACKS", "ATTACK DECISIONS", "CONFIRMED ATTACKS"):
+        idx = upper.find(marker)
+        if idx >= 0:
+            attack_idx = idx
+            break
+    if attack_idx < 0:
+        return set()
+    section = round_plan[attack_idx:]
+    for end_marker in ("NEXT ROUND STAGING", "STEP 3", "NONCOMBAT MOVE", "PURCHASE PLAN"):
+        end_idx = section.upper().find(end_marker)
+        if end_idx > 0:
+            section = section[:end_idx]
+            break
+    targets: set[str] = set()
+    section_lower = section.lower()
+    for terr in _CHINA_TERRITORIES:
+        if terr.lower() in section_lower:
+            targets.add(terr)
+    return targets
+
+
+def _scan_missed_opportunities(attacked: set[str]) -> list[dict]:
+    """
+    Scan game state for Chinese territories that the agent could attack
+    but didn't. Returns a list of opportunity dicts:
+      {"target": str, "pu": int, "defenders": int, "adjacent_jp": list[str], "free": bool}
+    """
+    try:
+        state = _client.get_state()
+    except Exception:
+        return []
+
+    units_by_terr: dict = state.get("unitsByTerritory", {})
+    terr_map: dict[str, dict] = {
+        t["name"]: t for t in state.get("territories", [])
+    }
+
+    opportunities: list[dict] = []
+    for t in state.get("territories", []):
+        name = t.get("name", "")
+        if name in attacked:
+            continue
+        owner = (t.get("owner", "") or "").lower()
+        if owner != "chinese":
+            continue
+        if name.lower() not in _CHINA_TERRITORIES_LOWER:
+            continue
+
+        all_units = t.get("unitsSummary", {})
+        jp_here = units_by_terr.get(name, {})
+        defender_count = 0
+        for ut, cnt in all_units.items():
+            if ut in _INFRA_KEYS:
+                continue
+            defender_count += max(cnt - jp_here.get(ut, 0), 0)
+
+        neighbors = t.get("neighbors", [])
+        adjacent_jp: list[str] = []
+        jp_ground_total = 0
+        for nb in neighbors:
+            nb_info = terr_map.get(nb, {})
+            if nb_info.get("isWater", False):
+                continue
+            nb_owner = (nb_info.get("owner", "") or "").lower()
+            if nb_owner not in ("japanese", "japan"):
+                continue
+            jp_units = units_by_terr.get(nb, {})
+            ground = sum(
+                v for k, v in jp_units.items()
+                if k not in _SEA_AIR_UNIT_TYPES and k not in _INFRA_KEYS and v > 0
+            )
+            if ground > 0:
+                adjacent_jp.append(nb)
+                jp_ground_total += ground
+
+        if not adjacent_jp:
+            continue
+
+        is_free = defender_count == 0
+        has_advantage = jp_ground_total >= defender_count * 1.5 if defender_count > 0 else False
+
+        if is_free or has_advantage:
+            opportunities.append({
+                "target": name,
+                "pu": t.get("puValue", 0),
+                "defenders": defender_count,
+                "adjacent_jp": adjacent_jp,
+                "free": is_free,
+            })
+
+    opportunities.sort(key=lambda x: (-x["free"], -x["pu"]))
+    return opportunities
+
+
+def _criticize_combat_execution(
+    round_plan: str,
+    handler: "QuietCallbackHandler",
+) -> str | None:
+    """
+    Criticizer for Combat Move:
+      1. Check if planned attack targets were all attacked.
+      2. Scan the board for missed opportunities (undefended or weak territories).
+    Returns retry instruction for the agent if issues found, None if OK.
+    """
+    planned = _extract_planned_targets(round_plan)
+    attacked = handler.attack_destinations
+
+    missed_plan = planned - attacked if planned else set()
+    missed_opps = _scan_missed_opportunities(attacked)
+
+    issues: list[str] = []
+
+    if not handler.move_tools_called and not attacked:
+        issues.append("You made 0 attacks in Combat Move. China conquest requires attacking every round.")
+
+    if missed_plan:
+        issues.append(
+            f"Plan targets NOT attacked: {', '.join(sorted(missed_plan))}"
+        )
+
+    free_targets = [o for o in missed_opps if o["free"]]
+    weak_targets = [o for o in missed_opps if not o["free"]]
+
+    if free_targets:
+        descs = [f"{o['target']} (0 defenders, +{o['pu']} IPC, "
+                 f"attack from {o['adjacent_jp'][0]})" for o in free_targets]
+        issues.append(
+            "Undefended Chinese territories you can capture for FREE:\n    "
+            + "\n    ".join(descs)
+        )
+
+    if weak_targets:
+        descs = [f"{o['target']} ({o['defenders']} defenders, +{o['pu']} IPC, "
+                 f"your adjacent forces at {', '.join(o['adjacent_jp'][:2])})"
+                 for o in weak_targets[:3]]
+        issues.append(
+            "Weak Chinese territories where you have overwhelming advantage:\n    "
+            + "\n    ".join(descs)
+        )
+
+    if not issues:
+        return None
+
+    issues_text = "\n".join(f"  • {i}" for i in issues)
+
+    print(f"\n  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{Colors.BOLD}  CRITICIZER — COMBAT MOVE REVIEW{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+    for i in issues:
+        print(f"  {Colors.YELLOW}  • {i}{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}\n")
+
+    retry = (
+        f"CRITICIZER REVIEW — You missed attack opportunities:\n"
+        f"{issues_text}\n\n"
+        f"You MUST address these NOW:\n"
+    )
+    if free_targets:
+        retry += (
+            f"  FREE CAPTURES (0 defenders — guaranteed win, no battle odds needed):\n"
+            f"    Send 1 infantry from the adjacent territory to each. Do this FIRST.\n"
+        )
+    retry += (
+        f"  For other targets:\n"
+        f"    1. Call tool_get_state if needed\n"
+        f"    2. ratio >= 1.5 → attack with tool_move_units\n"
+        f"    3. ratio 1.0-1.5 → call tool_predict_battle_odds; attack if >= 55%\n"
+        f"    4. ratio < 1.0 → skip\n"
+        f"  After all attacks, call tool_end_turn()."
+    )
+    return retry
+
+
+def _criticize_ncm_execution() -> str | None:
+    """
+    Criticizer for NCM: check if all transports were utilized and
+    all deployable troops were dispatched toward China.
+    Returns retry instruction if resources wasted, None if OK.
+    """
+    try:
+        state = _client.get_state()
+    except Exception:
+        return None
+
+    units_by_terr: dict = state.get("unitsByTerritory", {})
+    terr_map: dict[str, dict] = {
+        t["name"]: t for t in state.get("territories", [])
+    }
+
+    idle_transports: list[str] = []
+    for sz_name, units in units_by_terr.items():
+        info = terr_map.get(sz_name, {})
+        if not info.get("isWater", False):
+            continue
+        tp = units.get("transport", 0)
+        if tp <= 0:
+            continue
+        ground = {k: v for k, v in units.items()
+                  if k not in _SEA_AIR_UNIT_TYPES and v > 0}
+        if not ground:
+            idle_transports.append(f"{sz_name}: {tp} transport(s) EMPTY")
+
+    troops_on_japan = 0
+    jp_units = units_by_terr.get("Japan", {})
+    for ut in ("infantry", "artillery", "armour", "mech_infantry"):
+        troops_on_japan += jp_units.get(ut, 0)
+
+    issues: list[str] = []
+    if idle_transports:
+        issues.append("Idle transports (empty, no troops loaded):\n    "
+                       + "\n    ".join(idle_transports))
+    if troops_on_japan > 1:
+        issues.append(f"{troops_on_japan} ground units still on Japan "
+                       f"(only 1 garrison needed — send the rest to China)")
+
+    if not issues:
+        return None
+
+    issues_text = "\n".join(f"  • {i}" for i in issues)
+    print(f"\n  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{Colors.BOLD}  CRITICIZER — NCM INCOMPLETE{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}")
+    for i in issues:
+        print(f"  {Colors.YELLOW}  • {i}{Colors.RESET}")
+    print(f"  {Colors.YELLOW}{'━'*50}{Colors.RESET}\n")
+
+    return (
+        f"CRITICIZER: Transport / troop deployment incomplete:\n{issues_text}\n\n"
+        f"You MUST maximize force projection to China:\n"
+        f"  1. Call tool_get_state to verify current positions\n"
+        f"  2. For each idle transport near a loading zone: "
+        f"load troops with tool_transport_units\n"
+        f"  3. For troops on Japan: load onto available transports\n"
+        f"  4. Reposition all loaded transports toward Chinese coastal sea zones\n"
+        f"After completing all deployments, call tool_end_turn()."
+    )
 
 
 # ─────────────────────────────────────────────────────────────
@@ -2062,12 +2660,16 @@ def run_full_turn(
     round_num: int = 1,
     plan_tracker: list[StrategicPlan] | None = None,
     prev_round_summaries: list[str] | None = None,
+    memory: "Any | None" = None,
+    enable_criticizer: bool = True,
 ) -> "list[str]":
     """
     Execute a complete Japan turn (or resume from a mid-turn phase).
     start_phase: logged phase name for display; actual execution follows get_phase().
     plan_tracker: active Strategic Plans (game-level, cross-round).
     prev_round_summaries: cross-round memory from previous rounds.
+    memory: GameMemory instance for per-phase lesson retrieval (None = disabled).
+    enable_criticizer: whether to run Criticizer drift detection after phases.
     """
     import time as _time
 
@@ -2134,8 +2736,11 @@ def run_full_turn(
         handler.current_phase = step_name
         handler.reset_phase_tracking()
         _state_cache.reset()
-        global _transports_used_this_phase
+        global _transports_used_this_phase, _move_dedup, _criticizer_gate_fired, _criticizer_enabled
         _transports_used_this_phase = 0
+        _move_dedup = {}
+        _criticizer_gate_fired = {}
+        _criticizer_enabled = enable_criticizer
 
         # ── Phase banner (display.py) ─────────────────────────────
         _pnum  = _PHASE_NUMBER.get(step_name, 0)
@@ -2171,7 +2776,7 @@ def run_full_turn(
             except Exception as _pe:
                 print(f"  {Colors.DIM}[Purchase] Advisor error: {_pe}{Colors.RESET}")
 
-        # ── Transport capacity injection for Combat Move (Bug 3) ──
+        # ── Transport capacity injection for Combat Move ──
         if step_name == "japaneseCombatMove":
             try:
                 _raw_state = _client.get_state()
@@ -2190,10 +2795,28 @@ def run_full_turn(
             except Exception as _te:
                 print(f"  {Colors.DIM}[Transport] Could not compute capacity: {_te}{Colors.RESET}")
 
-        # ── Carry NONCOMBAT PLAN from Combat Move into NCM ───────
+        # ── Phase-specific lesson retrieval for Combat Move & NCM ──
+        if memory is not None and step_name in ("japaneseCombatMove", "japaneseNonCombatMove"):
+            _phase_label = "Combat Move" if step_name == "japaneseCombatMove" else "Noncombat Move"
+            _lesson_query = f"Japan round {round_num} {_phase_label} attack China lessons mistakes"
+            try:
+                _phase_lessons = memory.retrieve(_lesson_query, k=2)
+                if _phase_lessons and _phase_lessons.strip():
+                    instruction = (
+                        f"╔══ LESSONS FROM PAST GAMES (read before acting) ══╗\n"
+                        f"{_phase_lessons.strip()}\n"
+                        f"╚═══════════════════════════════════════════════════╝\n\n"
+                        + instruction
+                    )
+                    print(f"  {Colors.GREEN}[Lesson] Injected {_phase_label}-specific lessons{Colors.RESET}")
+            except Exception:
+                pass
+
+        # ── Carry NONCOMBAT PLAN into NCM ──
         if step_name == "japaneseNonCombatMove":
             _ncmp = phase_log.get("noncombat_plan", "")
             _cp   = phase_log.get("combat_plan", "")
+
             if _ncmp:
                 print_plan(_ncmp, label="Noncombat Plan (from Combat Move)")
                 instruction = (
@@ -2202,7 +2825,6 @@ def run_full_turn(
                     + instruction
                 )
             elif _cp:
-                # Fallback: carry combat plan if NCM plan wasn't extracted
                 print_plan(_cp, label="Combat Plan reference (for NCM staging)")
                 instruction = (
                     f"REFERENCE — COMBAT PLAN FROM PREVIOUS PHASE:\n"
@@ -2210,22 +2832,101 @@ def run_full_turn(
                     + instruction
                 )
 
-        # ── Battle phase: loop end_turn until all battles are resolved ──
+        # ── Battle phase: wait for server to resolve, then END_TURN ──
         if step_name == "japaneseBattle":
+            # Step 1: Wait for the server-side BattleDelegate to resolve all
+            # battles.  The server resolves battles asynchronously while
+            # BridgePlayer.start() is blocked.  We poll for coexistence
+            # (Japanese units on non-Japanese land) to disappear, which
+            # indicates all battles have been resolved.
+            def _count_coexistence() -> list[str]:
+                """Return list of territories where JP and enemy ground units coexist."""
+                try:
+                    _bs = _client.get_state()
+                    _bubt = _bs.get("unitsByTerritory", {})
+                    coex = []
+                    for _bt in _bs.get("territories", []):
+                        _bn = _bt.get("name", "")
+                        _bo = (_bt.get("owner", "") or "").lower()
+                        if _bo in ("japanese", "japan") or _bt.get("isWater", False):
+                            continue
+                        jp = _bubt.get(_bn, {})
+                        jp_g = sum(v for k, v in jp.items()
+                                   if k not in _SEA_AIR_UNIT_TYPES and k not in _INFRA_KEYS and v > 0)
+                        if jp_g <= 0:
+                            continue
+                        all_u = _bt.get("unitsSummary", {})
+                        en_g = sum(max(cnt - jp.get(ut, 0), 0)
+                                   for ut, cnt in all_u.items()
+                                   if ut not in _INFRA_KEYS and ut not in _SEA_AIR_UNIT_TYPES)
+                        if en_g > 0:
+                            coex.append(f"{_bn}(JP={jp_g},enemy={en_g})")
+                    return coex
+                except Exception:
+                    return []
+
+            _initial_coex = _count_coexistence()
+            if _initial_coex:
+                print(
+                    f"  {Colors.DIM}[Battle] Pending battles detected: "
+                    f"{', '.join(_initial_coex)}{Colors.RESET}"
+                )
+
+            _MAX_BATTLE_WAIT = 30  # seconds
+            _POLL_INTERVAL = 1.0
+            _waited = 0.0
+            while _waited < _MAX_BATTLE_WAIT:
+                _time.sleep(_POLL_INTERVAL)
+                _waited += _POLL_INTERVAL
+                _remaining = _count_coexistence()
+                if not _remaining:
+                    print(
+                        f"  {Colors.DIM}[Battle] All battles resolved by server "
+                        f"(waited {_waited:.1f}s){Colors.RESET}"
+                    )
+                    break
+                if _waited % 5 < _POLL_INTERVAL:
+                    print(
+                        f"  {Colors.DIM}[Battle] Still waiting... "
+                        f"unresolved: {', '.join(_remaining)} "
+                        f"({_waited:.0f}s){Colors.RESET}"
+                    )
+            else:
+                _still = _count_coexistence()
+                if _still:
+                    print(
+                        f"  {Colors.RED}[Battle] Timeout ({_MAX_BATTLE_WAIT}s) — "
+                        f"unresolved: {', '.join(_still)}{Colors.RESET}"
+                    )
+
+            # Step 2: Now send END_TURN(s) to advance past the Battle step.
             _battle_count = 0
             while True:
                 _battle_count += 1
-                print(f"  {Colors.DIM}[Battle] Resolving battle #{_battle_count}...{Colors.RESET}")
+                print(f"  {Colors.DIM}[Battle] Sending END_TURN #{_battle_count}...{Colors.RESET}")
                 _client.act_end_turn()
-                _time.sleep(0.5)
+                _time.sleep(1.0)
                 _next_phase = _client.get_phase()
                 if _next_phase != "japaneseBattle":
-                    print(f"  {Colors.DIM}[Battle] All {_battle_count} battle(s) resolved → {_next_phase}{Colors.RESET}")
+                    print(
+                        f"  {Colors.DIM}[Battle] Phase advanced → {_next_phase} "
+                        f"(after {_battle_count} END_TURN(s)){Colors.RESET}"
+                    )
                     break
                 if _battle_count >= 15:
-                    print(f"  {Colors.RED}[Battle] Safety limit: {_battle_count} end_turn calls, forcing advance{Colors.RESET}")
+                    print(
+                        f"  {Colors.RED}[Battle] Safety limit: "
+                        f"{_battle_count} END_TURNs, forcing advance{Colors.RESET}"
+                    )
                     break
-            output = f"Battle phase complete ({_battle_count} battle(s) resolved)."
+
+            output = f"Battle phase complete ({_battle_count} END_TURN(s))."
+
+            # Step 3: Post-battle coexistence check
+            _post_coex = _count_coexistence()
+            for _pc in _post_coex:
+                print(f"  {Colors.RED}[COEXIST BUG] {_pc}{Colors.RESET}")
+
             log_entry = f"[{step_name}] {output}"
             game_log.append(log_entry)
             completed_phases.append(step_name)
@@ -2257,8 +2958,6 @@ def run_full_turn(
         output = _invoke_with_retry(agent, instruction)
 
         # ── Extract combat + noncombat plans after Combat Move ───
-        # With return_direct=True, `output` is the tool return string, not the LLM plan.
-        # Use handler.last_llm_output (LLM reasoning before tool_end_turn) for plan extraction.
         if step_name == "japaneseCombatMove":
             _plan_src = handler.last_llm_output if handler.last_llm_output.strip() else output
             _cp = _extract_combat_plan(_plan_src)
@@ -2267,38 +2966,9 @@ def run_full_turn(
             _ncmp = _extract_noncombat_plan(_plan_src)
             if _ncmp:
                 phase_log["noncombat_plan"] = _ncmp
+
         if output.startswith("Agent error"):
             print(f"  {Colors.RED}[Warning] {output}{Colors.RESET}")
-
-        if step_name == "japaneseCombatMove" and not handler.move_tools_called:
-            # CRITICAL: check whether the game has already advanced past Combat Move.
-            # The agent may have called tool_end_turn() without attacking, advancing
-            # the game to Battle/NCM. Retrying in the wrong phase would corrupt the turn.
-            _time.sleep(0.5)  # brief pause so game state settles
-            _current_game_phase = _client.get_phase()
-            if _current_game_phase != "japaneseCombatMove":
-                print(
-                    f"\n  {Colors.RED}[Warning] No attacks in Combat Move, but game already advanced to "
-                    f"'{_current_game_phase}'. Skipping retry to avoid phase corruption.{Colors.RESET}"
-                )
-            else:
-                # Phase is still Combat Move — safe to retry
-                print(f"\n  {Colors.RED}[Warning] Combat Move: no attacks detected! Forcing re-evaluation...{Colors.RESET}")
-                retry_combat = (
-                    "You completed Combat Move without calling tool_move_units at all.\n"
-                    "This is not allowed. Complete the mandatory checklist now:\n\n"
-                    "Step 1: tool_get_state — record all territory unit counts\n"
-                    "Step 2: For each adjacent enemy territory, compute force ratio:\n"
-                    "  ratio ≥ 1.5  → attack with tool_move_units\n"
-                    "  ratio 1.0-1.5 → call tool_predict_battle_odds; attack if ≥55%\n"
-                    "  ratio < 1.0  → cancel, note in Combat Plan\n"
-                    "Step 3: Design NONCOMBAT PLAN for staging forces toward next round's target\n"
-                    "Step 4: tool_end_turn(), then output COMBAT PLAN + NONCOMBAT PLAN\n"
-                )
-                output2 = _invoke_with_retry(agent, retry_combat, max_retries=2)
-                if output2 and not output2.startswith("Agent error"):
-                    output = output2
-                    print(f"  {Colors.WHITE}[Retry] Combat Move re-evaluation complete{Colors.RESET}")
 
         # Wait for phase to advance, polling quickly to avoid missing fast transitions (e.g. NCM after Battle)
         for _poll in range(10):

@@ -41,12 +41,138 @@ load_dotenv()
 VALID_PHASES = ("Purchase Units", "Combat Move", "Noncombat Move")
 VALID_STAGES = ("Early", "Mid", "Late")
 
+_CHINA_TERRITORIES = [
+    "Manchuria", "Jehol", "Shantung", "Kiangsu", "Kiangsi", "Kwangtung",
+    "Kwangsi", "Chahar", "Anhwe", "Hunan", "Yunnan", "Hopei",
+    "Kweichow", "Szechwan", "Shensi", "Suiyuan", "Kansu", "Tsinghai", "Sikang",
+]
+
+_UNIT_VALUE = {
+    "infantry": 3, "artillery": 4, "armour": 6, "mech_infantry": 4,
+    "fighter": 10, "tactical_bomber": 11, "bomber": 12,
+    "transport": 7, "destroyer": 8, "submarine": 6, "cruiser": 12,
+    "carrier": 16, "battleship": 20, "aaGun": 5,
+}
+
+
+# ***************************************************************
+# Board Snapshot & Game Score — quantitative evaluation
+# ***************************************************************
+
+class BoardSnapshot:
+    """Immutable snapshot of the board state focused on the China theater."""
+
+    def __init__(
+        self,
+        round_num: int,
+        pus: int,
+        jp_china_territories: list[str],
+        jp_china_ipc: int,
+        china_controlled: int,
+        china_total: int,
+        china_army_value: int,
+    ):
+        self.round_num = round_num
+        self.pus = pus
+        self.jp_china_territories = jp_china_territories
+        self.jp_china_ipc = jp_china_ipc
+        self.china_controlled = china_controlled
+        self.china_total = china_total
+        self.china_army_value = china_army_value
+
+    @property
+    def score(self) -> float:
+        return game_score_from_snapshot(self)
+
+    def diff_summary(self, prev: "BoardSnapshot") -> str:
+        """Human-readable comparison with previous snapshot."""
+        lines = [f"Round {prev.round_num} → {self.round_num}:"]
+        _d_ipc = self.jp_china_ipc - prev.jp_china_ipc
+        _d_china = self.china_controlled - prev.china_controlled
+        _d_army = self.china_army_value - prev.china_army_value
+        _d_score = self.score - prev.score
+
+        if _d_ipc != 0:
+            lines.append(f"  Japan China IPC: {prev.jp_china_ipc} → {self.jp_china_ipc} ({_d_ipc:+d})")
+        if _d_china != 0:
+            lines.append(
+                f"  China control: {prev.china_controlled}/{prev.china_total} → "
+                f"{self.china_controlled}/{self.china_total} ({_d_china:+d})"
+            )
+        if _d_army != 0:
+            lines.append(f"  China army value: {prev.china_army_value} → {self.china_army_value} ({_d_army:+d})")
+        lines.append(f"  Score: {prev.score:.1f} → {self.score:.1f} ({_d_score:+.1f})")
+
+        new_terrs = set(self.jp_china_territories) - set(prev.jp_china_territories)
+        lost_terrs = set(prev.jp_china_territories) - set(self.jp_china_territories)
+        if new_terrs:
+            lines.append(f"  Gained: {', '.join(sorted(new_terrs))}")
+        if lost_terrs:
+            lines.append(f"  Lost: {', '.join(sorted(lost_terrs))}")
+        return "\n".join(lines)
+
+
+def board_snapshot(state: dict, round_num: int) -> BoardSnapshot:
+    """Create a BoardSnapshot from raw Bridge game state, focused on China theater.
+
+    IMPORTANT: unitsSummary includes ALL nations' units on a territory.
+    unitsByTerritory only contains JAPANESE units. To estimate Chinese units
+    on Chinese-owned territories, we subtract Japanese units from unitsSummary.
+    """
+    jp_pus = state.get("japan", {}).get("pus", 0)
+    jp_units_by_terr = state.get("unitsByTerritory", {})
+
+    jp_china_territories = []
+    jp_china_ipc = 0
+    china_controlled = 0
+    china_army_value = 0
+
+    _china_unit_val = {"infantry": 3, "artillery": 4, "fighter": 10, "aaGun": 5}
+
+    for t in state.get("territories", []):
+        name = t.get("name", "")
+        owner = t.get("owner", "") or ""
+        is_jp = owner in ("Japanese", "Japan")
+
+        if is_jp and name in _CHINA_TERRITORIES:
+            jp_china_territories.append(name)
+            jp_china_ipc += t.get("puValue", 0)
+            china_controlled += 1
+
+        if owner == "Chinese":
+            all_units = t.get("unitsSummary", {})
+            jp_here = jp_units_by_terr.get(name, {})
+            for unit_type, total_count in all_units.items():
+                jp_count = jp_here.get(unit_type, 0)
+                chinese_count = max(total_count - jp_count, 0)
+                if chinese_count > 0:
+                    china_army_value += _china_unit_val.get(unit_type, 0) * chinese_count
+
+    return BoardSnapshot(
+        round_num=round_num,
+        pus=jp_pus,
+        jp_china_territories=jp_china_territories,
+        jp_china_ipc=jp_china_ipc,
+        china_controlled=china_controlled,
+        china_total=len(_CHINA_TERRITORIES),
+        china_army_value=china_army_value,
+    )
+
+
+def game_score_from_snapshot(snap: BoardSnapshot) -> float:
+    """
+    China theater score:
+      Japan-controlled Chinese territory IPC  -  remaining Chinese army value
+    Higher = better for Japan.
+    """
+    return float(snap.jp_china_ipc - snap.china_army_value)
+
+
 _TERRITORY_HINTS = [
-    "Japan", "Kiangsu", "Manchuria", "India", "Philippines", "Calcutta",
-    "Burma", "Sumatra", "Java", "Borneo", "Celebes", "Sea Zone", "Hawaiian",
-    "Malaya", "French Indo-China", "Kwangtung", "Hunan", "Kiangsi", "Anhwe",
-    "Shantung", "Hupeh", "Yunnan", "Kwangsi", "Fukien", "Chekiang", "Hopei",
-    "China", "Shensi",
+    "Japan", "Korea", "Manchuria", "Jehol", "Shantung", "Kiangsu", "Kiangsi",
+    "Kwangtung", "Kwangsi", "Chahar", "Anhwe", "Hunan", "Yunnan", "Hopei",
+    "Kweichow", "Szechwan", "Shensi", "Suiyuan", "Kansu", "Tsinghai", "Sikang",
+    "Sea Zone", "India", "Burma", "Formosa",
 ]
 _UNIT_HINTS = [
     "infantry", "transport", "armour", "artillery", "fighter",
@@ -362,7 +488,14 @@ class GameMemory:
                 print(f"  [RAG] Retrieval failed ({type(e).__name__}) — skipping.")
             return ""
 
-        combined = exp_results + rules_texts
+        if not exp_results and not rules_texts:
+            return ""
+        # Only include rules if there are ALSO experience results.
+        # Without experience, rules are generic noise that hurts LLM focus.
+        if exp_results:
+            combined = exp_results + rules_texts
+        else:
+            combined = []
         if not combined:
             return ""
         return "\n\n---\n\n".join(combined)
@@ -431,10 +564,98 @@ class ReflexionEngine:
         self.memory = memory
         self.experiences_path = experiences_path
         self.ns_path = ns_path
+        self._round_reflect_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
 
         _base = ChatOpenAI(model=reflect_model, temperature=0.1)
         self.structured_llm = _base.with_structured_output(StrategicReflexionOutput)
         self.fallback_llm = ChatOpenAI(model="gpt-4o-mini", temperature=0)
+
+    # ── Round-level reflection ────────────────────────────────
+
+    def reflect_round(
+        self,
+        prev_snap: BoardSnapshot,
+        curr_snap: BoardSnapshot,
+        round_log: list[str],
+        plan_tracker: list["StrategicPlan"],
+    ) -> str | None:
+        """
+        Compare board snapshots between rounds. Reflect if score dropped OR stagnated.
+        Generate a concrete lesson via LLM and store it in RAG.
+        """
+        delta = curr_snap.score - prev_snap.score
+        diff_text = curr_snap.diff_summary(prev_snap)
+        gained = set(curr_snap.jp_china_territories) - set(prev_snap.jp_china_territories)
+
+        print(f"\n  [Round Reflection] Score delta: {delta:+.1f}")
+        print(f"  {diff_text.replace(chr(10), chr(10) + '  ')}")
+
+        if delta > 0 and gained:
+            print(f"  [Round Reflection] Score improved, territory gained — skipping")
+            return None
+
+        active_plans = [p for p in plan_tracker if p.status == "active"]
+        plans_text = ", ".join(f"{p.name} (target round {p.target_round})" for p in active_plans)
+        log_text = "\n".join(round_log[-15:])
+
+        if delta <= 0 and not gained:
+            situation = (
+                f"STAGNATION: Score went from {prev_snap.score:.1f} to {curr_snap.score:.1f} "
+                f"(delta: {delta:+.1f}) and NO new territory was captured.\n"
+                f"Japan controls {curr_snap.china_controlled}/{curr_snap.china_total} Chinese territories.\n"
+                f"This round was WASTED — every round without expansion costs the campaign."
+            )
+        else:
+            situation = (
+                f"Score changed from {prev_snap.score:.1f} to {curr_snap.score:.1f} "
+                f"(delta: {delta:+.1f})."
+            )
+
+        prompt = (
+            f"Japan just completed Round {curr_snap.round_num} in Axis & Allies Pacific 1940.\n"
+            f"{situation}\n\n"
+            f"Changes this round:\n{diff_text}\n\n"
+            f"Active strategic plans: {plans_text}\n\n"
+            f"Round action log:\n{log_text}\n\n"
+            f"Write ONE concrete, actionable lesson. Format:\n"
+            f"LESSON: [what happened] → [what to do differently next time]\n\n"
+            f"The lesson MUST include specific territory names and unit counts.\n\n"
+            f"GOOD examples:\n"
+            f'- "Round 2: No territory captured — 8 infantry sat idle on Japan with only 1 '
+            f'transport. Must buy 2 transports in round 1 to ship 4 units/round to China."\n'
+            f'- "Round 3: Attacked Anhwe with 2 inf vs 3 def (ratio 0.67) — lost. '
+            f'Always use aircraft from Kiangsu to boost ratio above 1.5 before attacking."\n'
+            f'- "Round 1: Missed free capture of Chahar (0 defenders, adjacent to Jehol). '
+            f'Always scan for undefended territories before evaluating hard targets."\n'
+        )
+
+        try:
+            response = self._invoke_with_rate_limit_retry(
+                lambda: self._round_reflect_llm.invoke(prompt),
+                label="round-reflection",
+            )
+            if response is None:
+                return None
+
+            text = response.content.strip()
+            lesson_match = re.search(r"LESSON:\s*(.+)", text, re.IGNORECASE)
+            lesson = lesson_match.group(1).strip() if lesson_match else text
+
+            tagged = f"[Round {curr_snap.round_num}] [Score {delta:+.1f}] {lesson}"
+            self.memory.add_experience(
+                tagged,
+                metadata={
+                    "source": "round_reflection",
+                    "round": curr_snap.round_num,
+                    "score_delta": delta,
+                },
+            )
+            print(f"  [Round Reflection] Lesson stored: {tagged[:100]}")
+            return tagged
+
+        except Exception as e:
+            print(f"  [Round Reflection] Failed: {e}")
+            return None
 
     # ── 429 rate-limit retry ─────────────────────────────────
 
@@ -504,15 +725,16 @@ class ReflexionEngine:
 
         self._print_review_report(reviews)
 
-        # Store lessons in FAISS
+        # Store lessons in FAISS with rich context
         stored = 0
         for review in reviews:
             if review.lesson and review.lesson.strip():
-                rag_text = (
-                    f"[Plan: {review.plan_name}] "
-                    f"[{'ACHIEVED' if review.achieved else 'FAILED'}] "
-                    f"{review.lesson}"
-                )
+                status = "ACHIEVED" if review.achieved else "FAILED"
+                parts = [f"[{status}] [Plan: {review.plan_name}]"]
+                if not review.achieved and review.failure_chain:
+                    parts.append(f"Failure: {review.failure_chain}")
+                parts.append(f"Lesson: {review.lesson}")
+                rag_text = "\n".join(parts)
                 self.memory.add_experience(
                     rag_text,
                     metadata={
@@ -561,6 +783,11 @@ class ReflexionEngine:
         return f"""You just completed rounds 1-{round_num} of Axis & Allies Pacific 1940.
 Game result: {result}
 
+Chinese territories (19 total, with IPC values):
+  Manchuria(3), Jehol(1), Shantung(3), Kiangsu(3), Kiangsi(2), Kwangtung(3),
+  Kwangsi(1), Chahar(1), Anhwe(1), Hunan(1), Yunnan(2), Hopei(2),
+  Kweichow(1), Szechwan(2), Shensi(1), Suiyuan(1), Kansu(1), Tsinghai(1), Sikang(1)
+
 The following Strategic Plans were active during this game:
 {plans_text}
 
@@ -569,25 +796,39 @@ Game log (most recent actions):
 
 For EACH strategic plan above, generate a review. Your analysis chain for each plan:
 
-1. OUTCOME CHECK: Was the expected outcome achieved? Check territories, IPC, unit positions.
+1. OUTCOME CHECK: Was the expected outcome achieved?
+   List SPECIFIC territories that were/weren't captured, and how many rounds it took.
 
 2. If FAILED — FAILURE CHAIN ANALYSIS:
-   Trace the causal chain backward. Example:
-   "Failed to capture FIC by round 5 ← Yunnan was never taken ← only 2 infantry in Kwangsi vs 3 Chinese defenders ← insufficient force allocation to southern front"
-   Be specific: territory names, unit counts, round numbers.
+   Trace the causal chain backward with SPECIFIC territory names, unit counts, round numbers.
+   Example: "Failed to take Anhwe by round 3 ← only 2 inf attacked 3 defenders (ratio 0.67)
+   ← should have staged 4+ inf in Kiangsu during round 2 NCM"
 
 3. ROOT CAUSE CLASSIFICATION:
-   "strategy_error" — the plan itself was flawed (wrong target, unrealistic timeline, wrong prerequisite order)
-   "execution_error" — the plan was sound but a specific tactical step failed (bad force ratio, forgot to move units, wrong purchase)
+   "strategy_error" — wrong target order, unrealistic timeline
+   "execution_error" — right plan but failed to move/attack/transport
 
 4. ROOT CAUSE DETAIL: Which exact step or decision was the root cause?
 
-5. LESSON: A reusable strategic insight for future games. Must be concrete.
-   BAD: "Should have planned better"
-   GOOD: "When pushing toward FIC, Yunnan must be cleared first (requires >= 3 infantry). Add 'Secure Yunnan' as prerequisite action before FIC assault."
+5. LESSON: Must follow this format:
+   "[Territory advice] [Force ratio/timing] [Concrete action for next game]"
 
-6. NATIONAL STRATEGY UPDATE: What should change in the persistent strategy document?
-   Examples: "Add Yunnan as prerequisite for FIC push", "Increase confidence for coastal plan to 0.9", "Add risk: UK reinforces India if FIC not taken by round 5"
+   BAD lessons (too vague, NEVER write these):
+   - "Should have planned better"
+   - "Ensure forces are moved as planned"
+   - "Prioritize early attacks"
+
+   GOOD lessons (specific, reusable):
+   - "Shantung (3 IPC) and Kiangsu (3 IPC) are highest-value coastal targets.
+     Attack both in round 1 using forces from Manchuria/Jehol + sea transport."
+   - "Kwangtung (3 IPC) is reachable from Kwangsi on round 1 — always attack
+     if Kwangsi has >= 3 infantry. Free 3 IPC should never be left."
+   - "Chahar (1 IPC) often has 0-1 defenders by round 2. Send 1 infantry from
+     Jehol for a free capture before attacking harder targets."
+   - "Buy 1 transport every round until you have 4. Each transport = 2 units/round
+     from Japan to China. Without transports, Japan's factory is wasted."
+
+6. NATIONAL STRATEGY UPDATE: What should change in the persistent strategy?
 """
 
     # ── Review report ────────────────────────────────────────

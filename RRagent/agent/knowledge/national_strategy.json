@@ -1,67 +1,35 @@
 {
   "nation": "Japan",
-  "version": 8,
-  "last_updated_game": "2da24473",
-  "core_doctrine": "Control the Pacific through aggressive southern expansion. Secure the Chinese coast early, then push through French Indo-China toward India while protecting the home islands.",
+  "version": 16,
+  "last_updated_game": "f1b95d2b",
+  "core_doctrine": "Conquer all Chinese territories. Transport troops from Japan to the Chinese coast every round. Attack every adjacent Chinese territory where force ratio is favorable. Compress China from all directions until eliminated.",
   "strategic_plans": [
     {
-      "id": "sp_secure_coast",
-      "name": "Secure Chinese Coast",
+      "id": "sp_conquer_china",
+      "name": "Conquer China",
       "priority": 1,
-      "target_rounds": "1-3",
-      "reason": "Compress Chinese forces westward to gain IPC from coastal provinces and establish a land corridor toward Southeast Asia.",
+      "target_rounds": "1-6",
+      "reason": "China is the sole objective. Every round must capture at least one Chinese territory. Use transports to continuously reinforce the mainland from Japan.",
       "key_actions": [
-        "Control all Chinese coastal provinces and their buffer zone like Chahar, Anhwe, Anhwe, Hunan,Yunan"
+        "Transport troops from Japan to coastal staging areas every round",
+        "Attack all adjacent Chinese territories with favorable force ratio",
+        "Push westward from the coast into the interior",
+        "Never leave troops idle on Japan when transports are available"
       ],
-      "expected_outcome": "Control all Chinese coastal provinces and their buffer zone(Chahar, Anhwe, Anhwe, Hunan,Yunan) by round 3",
+      "expected_outcome": "Control 80%+ of Chinese territories and reduce Chinese army to near zero by round 6.",
       "status": "proposed",
       "confidence": 0.7,
-      "lessons_learned": []
-    },
-    {
-      "id": "sp_capture_fic",
-      "name": "Capture Kwangtung and French Indo China",
-      "priority": 2,
-      "target_rounds": "3-5",
-      "reason": "Kwangtung is the gateway to French Indo China, which serves as the staging area for the India campaign. Without FIC, India is unreachable by land.",
-      "key_actions": [
-        "Attack Kwangtung once at war with British ",
-        "Attack French Indo China after occupied Kwantung"
-      ],
-      "expected_outcome": "Control French Indo China by round 5, with 5+ ground units staged for India push",
-      "status": "proposed",
-      "confidence": 0.6,
-      "lessons_learned": []
-    },
-    {
-      "id": "sp_india_push",
-      "name": "Capture India",
-      "priority": 3,
-      "target_rounds": "5-7",
-      "reason": "India is a major Allied industrial complex. Capturing it cripples British Pacific income and secures the western flank.",
-      "key_actions": [
-        "Accumulate 6+ ground units in French Indo China/Burma staging area",
-        "Use fighters from carriers or nearby airbases for support",
-        "Coordinate with amphibious landings via 35/37 Sea Zone"
-      ],
-      "expected_outcome": "Capture India, eliminating British Pacific industrial capacity",
-      "status": "proposed",
-      "confidence": 0.5,
       "lessons_learned": []
     }
   ],
   "known_risks": [
     {
-      "description": "British forces can heavily reinforce India if Japan moves too slowly through French Indo China",
-      "mitigation": "Must reach FIC by round 4 at latest; buy transports early to accelerate troop flow"
+      "description": "Attacking with insufficient force ratio leads to losses without gaining territory",
+      "mitigation": "Only attack when ratio >= 1.5 or win rate >= 55%. Use aircraft to boost borderline attacks."
     },
     {
-      "description": "Overextending into central China wastes forces on low-value territories",
-      "mitigation": "Ignore Hupeh/Shensi/Szechwan; focus on the coastal-to-FIC corridor"
-    },
-    {
-      "description": "Transport bottleneck: units on Japan are worthless without transport capacity",
-      "mitigation": "When japan_land >= 4 and transports <= 2, prioritize transport purchases"
+      "description": "Transport bottleneck: units stuck on Japan with too few transports",
+      "mitigation": "Maintain minimum 3 transports. Buy more if Japan stockpile exceeds 4 land units."
     }
   ]
 }
