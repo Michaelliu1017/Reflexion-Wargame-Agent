@@ -39,8 +39,8 @@ A self-evolving wargame AI agent that learns from its own gameplay experience. B
 
 | Layer | Trigger | What it does | Gate |
 |-------|---------|-------------|------|
-| **Round-level** | After each round (Config C) | Compares board snapshots; if score dropped or territory lost, LLM generates a tactical lesson → immediately indexed for same-game retrieval | Score improvement + new territory = skip |
-| **Game-level** | After full game (Configs B, C) | Structured review of each strategic plan's execution → lessons persisted to `experiences.json` and `national_strategy.json` for cross-game learning | Always runs |
+| **Round-level** | After each round  | Compares board snapshots; if score dropped or territory lost, LLM generates a tactical lesson → immediately indexed for same-game retrieval | Score improvement + new territory = skip |
+| **Game-level** | After full game  | Structured review of each strategic plan's execution → lessons persisted to `experiences.json` and `national_strategy.json` for cross-game learning | Always runs |
 
 ### Hybrid RAG (BM25 + FAISS + RRF)
 
