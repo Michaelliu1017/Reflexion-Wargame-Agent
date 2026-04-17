@@ -419,5 +419,113 @@
         "national_strategy_update": "Update sp_china_interior: Emphasize early staging of forces in Kiangsi and Kiangsu for timely interior advances."
       }
     ]
+  },
+  {
+    "game_id": "61f94080",
+    "result": "TIMEOUT - Conquer China (control ≥80% territories AND Chinese army ≤ 6 IPC) not achieved in 6 rounds",
+    "round_num": 6,
+    "strategic_plans": [
+      {
+        "plan_id": "sp_coastal_domination",
+        "name": "Coastal Domination",
+        "reason": "Securing coastal territories provides a strong base for further inland operations and cuts off Chinese reinforcements from the sea.",
+        "actions": [
+          "Transport 3 infantry and 1 artillery from Japan to Kiangsu using transports in 6 Sea Zone.",
+          "Use fighters and tactical bombers from Japan to support attacks on Kiangsu and Kwangtung.",
+          "Capture Kiangsu and Kwangtung to establish a strong coastal presence.",
+          "Reinforce captured territories with additional troops from Japan in subsequent rounds."
+        ],
+        "expected_outcome": "By round 3, control Kiangsu and Kwangtung, establishing a strong coastal base for further inland operations.",
+        "target_round": 3,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Round 1, Japan successfully captured the territories of Hunan, Chahar, and Anhwe, increasing their control from 6 to 8 territories in China. This resulted in a score change from -50.0 to -33.0, as Japan gained 2 IPC from the captured territories while reducing China's army value by 15. Japan's IPC increased from 11 to 13, reflecting the successful territorial gains and the weakening of Chinese defenses.",
+          "Round 2: Round 2: In Round 2, Japan attempted to capture Kweichow, Hopei, and Kwangtung but ultimately failed to capture any of these territories due to movement and political restrictions. As a result, Japan's control of Chinese territories decreased from 8 to 7, while their IPC from China dropped from 13 to 12. The score improved by 26.0, from -43.0 to -17.0, primarily due to the destruction of 27 Chinese army units, reducing China's army value from 56 to 29.",
+          "Round 3: Round 3: In Round 3, Japan successfully captured Kiangsi and Kweichow but lost Anhwe and Chahar, resulting in a net gain of two territories. Japan now controls 6 territories, up from 4 last round. The score changed from -57.0 to -72.0, reflecting a loss of 15.0 due to the increased Chinese army value from 68 to 83, despite the territorial gains.",
+          "Round 4: Round 4: In Round 4, Japan successfully captured the Chinese territories of Chahar, Kwangsi, and Hunan, while losing Kweichow. Japan now controls 8 out of 19 territories, up from 6, and their IPC increased from 11 to 13, resulting in a score change from -72.0 to -58.0, a gain of 14.0 due to the captured territories and the reduction of the Chinese army value from 83 to 71.",
+          "Round 5: Round 5: In Round 5, Japan successfully captured the Chinese territories of Anhwe, Hopei, Kweichow, and Suiyuan, increasing their control from 8 to 12 territories. This resulted in a score change from -75.0 to -72.0, as the gain of 4 IPCs from the captured territories boosted Japan's IPC total from 13 to 17. Japan's combat moves effectively weakened Chinese forces, with their army value increasing from 88 to 89.",
+          "Round 6: Round 6: In Round 6, Japan successfully captured Shensi, increasing its control from 12 to 13 Chinese territories. The score decreased by 12.0, from -72.0 to -84.0, due to the gain of 1 IPC from Shensi, despite encountering movement issues that prevented the capture of Szechwan, Kansu, Tsinghai, and Sikang. Japan's IPC from China rose from 17 to 18, while the Chinese army value increased by 13, reflecting the ongoing conflict."
+        ]
+      },
+      {
+        "plan_id": "sp_northern_push",
+        "name": "Northern Push",
+        "reason": "Capturing northern territories like Manchuria and Jehol will allow for a pincer movement towards central China, squeezing Chinese forces from the north and east.",
+        "actions": [
+          "Move infantry and artillery from Jehol to attack Chahar.",
+          "Use tactical bombers from Manchuria to support the attack on Chahar.",
+          "Reinforce Jehol with additional infantry from Manchuria to prepare for further advances.",
+          "Capture Chahar and prepare to push into Hopei and Suiyuan."
+        ],
+        "expected_outcome": "By round 4, control Chahar and be positioned to advance into Hopei and Suiyuan, pressuring Chinese forces from the north.",
+        "target_round": 4,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Round 1, Japan successfully captured the territories of Hunan, Chahar, and Anhwe, increasing their control from 6 to 8 territories in China. This resulted in a score change from -50.0 to -33.0, as Japan gained 2 IPC from the captured territories while reducing China's army value by 15. Japan's IPC increased from 11 to 13, reflecting the successful territorial gains and the weakening of Chinese defenses.",
+          "Round 2: Round 2: In Round 2, Japan attempted to capture Kweichow, Hopei, and Kwangtung but ultimately failed to capture any of these territories due to movement and political restrictions. As a result, Japan's control of Chinese territories decreased from 8 to 7, while their IPC from China dropped from 13 to 12. The score improved by 26.0, from -43.0 to -17.0, primarily due to the destruction of 27 Chinese army units, reducing China's army value from 56 to 29.",
+          "Round 3: Round 3: In Round 3, Japan successfully captured Kiangsi and Kweichow but lost Anhwe and Chahar, resulting in a net gain of two territories. Japan now controls 6 territories, up from 4 last round. The score changed from -57.0 to -72.0, reflecting a loss of 15.0 due to the increased Chinese army value from 68 to 83, despite the territorial gains.",
+          "Round 4: Round 4: In Round 4, Japan successfully captured the Chinese territories of Chahar, Kwangsi, and Hunan, while losing Kweichow. Japan now controls 8 out of 19 territories, up from 6, and their IPC increased from 11 to 13, resulting in a score change from -72.0 to -58.0, a gain of 14.0 due to the captured territories and the reduction of the Chinese army value from 83 to 71.",
+          "Round 5: Round 5: In Round 5, Japan successfully captured the Chinese territories of Anhwe, Hopei, Kweichow, and Suiyuan, increasing their control from 8 to 12 territories. This resulted in a score change from -75.0 to -72.0, as the gain of 4 IPCs from the captured territories boosted Japan's IPC total from 13 to 17. Japan's combat moves effectively weakened Chinese forces, with their army value increasing from 88 to 89.",
+          "Round 6: Round 6: In Round 6, Japan successfully captured Shensi, increasing its control from 12 to 13 Chinese territories. The score decreased by 12.0, from -72.0 to -84.0, due to the gain of 1 IPC from Shensi, despite encountering movement issues that prevented the capture of Szechwan, Kansu, Tsinghai, and Sikang. Japan's IPC from China rose from 17 to 18, while the Chinese army value increased by 13, reflecting the ongoing conflict."
+        ]
+      },
+      {
+        "plan_id": "sp_interior_advancement",
+        "name": "Interior Advancement",
+        "reason": "Pushing into the interior territories will disrupt Chinese defenses and allow for a rapid collapse of their central command.",
+        "actions": [
+          "From Kiangsi, attack Hunan with infantry and artillery, supported by fighters from Korea.",
+          "Reinforce Kiangsi with additional troops from Kwangsi to maintain pressure.",
+          "Capture Hunan and prepare to advance into Kweichow and Szechwan.",
+          "Use air superiority to maintain pressure and disrupt Chinese reinforcements."
+        ],
+        "expected_outcome": "By round 5, control Hunan and be positioned to advance into Kweichow and Szechwan, breaking Chinese central defenses.",
+        "target_round": 5,
+        "status": "active",
+        "progress": [
+          "Round 1: Round 1: In Round 1, Japan successfully captured the territories of Hunan, Chahar, and Anhwe, increasing their control from 6 to 8 territories in China. This resulted in a score change from -50.0 to -33.0, as Japan gained 2 IPC from the captured territories while reducing China's army value by 15. Japan's IPC increased from 11 to 13, reflecting the successful territorial gains and the weakening of Chinese defenses.",
+          "Round 2: Round 2: In Round 2, Japan attempted to capture Kweichow, Hopei, and Kwangtung but ultimately failed to capture any of these territories due to movement and political restrictions. As a result, Japan's control of Chinese territories decreased from 8 to 7, while their IPC from China dropped from 13 to 12. The score improved by 26.0, from -43.0 to -17.0, primarily due to the destruction of 27 Chinese army units, reducing China's army value from 56 to 29.",
+          "Round 3: Round 3: In Round 3, Japan successfully captured Kiangsi and Kweichow but lost Anhwe and Chahar, resulting in a net gain of two territories. Japan now controls 6 territories, up from 4 last round. The score changed from -57.0 to -72.0, reflecting a loss of 15.0 due to the increased Chinese army value from 68 to 83, despite the territorial gains.",
+          "Round 4: Round 4: In Round 4, Japan successfully captured the Chinese territories of Chahar, Kwangsi, and Hunan, while losing Kweichow. Japan now controls 8 out of 19 territories, up from 6, and their IPC increased from 11 to 13, resulting in a score change from -72.0 to -58.0, a gain of 14.0 due to the captured territories and the reduction of the Chinese army value from 83 to 71.",
+          "Round 5: Round 5: In Round 5, Japan successfully captured the Chinese territories of Anhwe, Hopei, Kweichow, and Suiyuan, increasing their control from 8 to 12 territories. This resulted in a score change from -75.0 to -72.0, as the gain of 4 IPCs from the captured territories boosted Japan's IPC total from 13 to 17. Japan's combat moves effectively weakened Chinese forces, with their army value increasing from 88 to 89.",
+          "Round 6: Round 6: In Round 6, Japan successfully captured Shensi, increasing its control from 12 to 13 Chinese territories. The score decreased by 12.0, from -72.0 to -84.0, due to the gain of 1 IPC from Shensi, despite encountering movement issues that prevented the capture of Szechwan, Kansu, Tsinghai, and Sikang. Japan's IPC from China rose from 17 to 18, while the Chinese army value increased by 13, reflecting the ongoing conflict."
+        ]
+      }
+    ],
+    "reviews": [
+      {
+        "plan_id": "sp_coastal_domination",
+        "plan_name": "Coastal Domination",
+        "achieved": false,
+        "actual_outcome": "Kiangsu was captured by round 3, but Kwangtung was never captured due to political restrictions. Coastal presence was not fully established as planned.",
+        "failure_chain": "Failed to capture Kwangtung by round 3 due to political restrictions preventing movement over British territory. This blocked the full establishment of a coastal base.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "The plan failed to account for political restrictions that prevented movement into Kwangtung, a critical coastal territory.",
+        "lesson": "Kwangtung (3 IPC) is a critical coastal target but requires political clearance. Always check political status before planning attacks on British territories.",
+        "national_strategy_update": "Add known_risk: Political restrictions may block coastal targets like Kwangtung. Include political status check in sp_coastal_domination."
+      },
+      {
+        "plan_id": "sp_northern_push",
+        "plan_name": "Northern Push",
+        "achieved": true,
+        "actual_outcome": "Chahar was captured by round 1, and Hopei and Suiyuan were captured by round 5, achieving the northern pressure objective.",
+        "failure_chain": "",
+        "root_cause": "",
+        "root_cause_detail": "",
+        "lesson": "Chahar (1 IPC) is often lightly defended. Capture early with 1 infantry from Jehol to establish a northern front quickly.",
+        "national_strategy_update": "Increase confidence for sp_northern_push to 0.9 due to successful early capture of northern territories."
+      },
+      {
+        "plan_id": "sp_interior_advancement",
+        "plan_name": "Interior Advancement",
+        "achieved": false,
+        "actual_outcome": "Hunan was captured by round 4, but Kweichow and Szechwan were not secured by round 5 due to movement restrictions and insufficient forces.",
+        "failure_chain": "Failed to capture Kweichow and Szechwan by round 5 due to movement restrictions and insufficient forces in Kiangsi to push further inland.",
+        "root_cause": "execution_error",
+        "root_cause_detail": "Insufficient forces were staged in Kiangsi to push into Kweichow and Szechwan, and movement restrictions were not anticipated.",
+        "lesson": "When advancing from Kiangsi, ensure at least 4 infantry and 1 artillery are staged to push into Kweichow and Szechwan by round 4. Check for movement restrictions early.",
+        "national_strategy_update": "Update sp_interior_advancement: Ensure sufficient forces are staged in Kiangsi for inland pushes, and anticipate movement restrictions."
+      }
+    ]
   }
 ]

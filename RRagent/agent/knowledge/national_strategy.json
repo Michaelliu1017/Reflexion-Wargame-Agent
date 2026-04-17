@@ -1,7 +1,7 @@
 {
   "nation": "Japan",
-  "version": 16,
-  "last_updated_game": "f1b95d2b",
+  "version": 17,
+  "last_updated_game": "61f94080",
   "core_doctrine": "Conquer all Chinese territories. Transport troops from Japan to the Chinese coast every round. Attack every adjacent Chinese territory where force ratio is favorable. Compress China from all directions until eliminated.",
   "strategic_plans": [
     {
