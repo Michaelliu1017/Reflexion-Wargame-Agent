@@ -15,7 +15,7 @@ A self-evolving wargame AI agent that learns from its own gameplay experience. B
 │                        Game Loop (main.py)                      │
 │                                                                 │
 │  ┌──────────┐    ┌──────────┐    ┌──────────┐    ┌──────────┐  │
-│  │ Purchase  │───▶│  Combat  │───▶│   NCM    │───▶│  Place   │  │
+│  │ Purchase │───▶│  Combat  │───▶│   NCM    │───▶│  Place   │  │
 │  │          │    │  Move    │    │          │    │          │  │
 │  └──────────┘    └────┬─────┘    └────┬─────┘    └──────────┘  │
 │                       │               │                         │
