@@ -19,17 +19,17 @@ The agent improves through three layers of feedback operating at increasing time
   Per Phase    ┌─────────────────────┐
                │  L1  Phase          │   Agent acts → Criticizer checks
                │      Criticizer     │   → blocks if missed actions
-               └─────────┬───────────┘   → agent corrects → retry
+               └──────────┬──────────┘   → agent corrects → retry
                           │
   Per Round    ┌──────────▼──────────┐
                │  L2  Round          │   Board snapshot diff → score dropped?
                │      Reflection     │   → LLM generates tactical lesson
-               └─────────┬───────────┘   → stored in FAISS (same-game retrieval)
+               └──────────┬──────────┘   → stored in FAISS (same-game retrieval)
                           │
   Per Game     ┌──────────▼──────────┐
                │  L3  Game           │   Strategic plan review → structured lessons
                │      Reflection     │   → experiences.json + national_strategy.json
-               └─────────┬───────────┘   → RAG retrieval in future games
+               └──────────┬──────────┘   → RAG retrieval in future games
                           │
                ┌──────────▼──────────┐
                │  Hybrid RAG         │   BM25 + FAISS + RRF fusion
